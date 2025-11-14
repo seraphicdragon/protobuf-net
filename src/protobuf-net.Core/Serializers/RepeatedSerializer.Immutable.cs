@@ -82,19 +82,19 @@ namespace ProtoBuf.Serializers
 
         protected override int TryGetCount(ImmutableArray<T> values) => values.IsDefaultOrEmpty ? 0 : values.Length;
 
-        internal override long Measure(ImmutableArray<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
+        public override long Measure(ImmutableArray<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
         {
             var iter = new Enumerator(values);
             return Measure(ref iter, serializer, context, wireType);
         }
 
-        internal override void WritePacked(ref ProtoWriter.State state, ImmutableArray<T> values, IMeasuringSerializer<T> serializer, WireType wireType)
+        public override void WritePacked(ref ProtoWriter.State state, ImmutableArray<T> values, IMeasuringSerializer<T> serializer, WireType wireType)
         {
             var iter = new Enumerator(values);
             WritePacked(ref state, ref iter, serializer, wireType);
         }
 
-        internal override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, ImmutableArray<T> values, ISerializer<T> serializer, SerializerFeatures features)
+        public override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, ImmutableArray<T> values, ISerializer<T> serializer, SerializerFeatures features)
         {
             var iter = new Enumerator(values);
             Write(ref state, fieldNumber, category, wireType, ref iter, serializer, features);
@@ -123,17 +123,17 @@ namespace ProtoBuf.Serializers
             => values.Clear();
         protected override int TryGetCount(ImmutableList<T> values) => values is null ? 0 : values.Count;
 
-        internal override long Measure(ImmutableList<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
+        public override long Measure(ImmutableList<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
         {
             var iter = values.GetEnumerator();
             return Measure(ref iter, serializer, context, wireType);
         }
-        internal override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, ImmutableList<T> values, ISerializer<T> serializer, SerializerFeatures features)
+        public override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, ImmutableList<T> values, ISerializer<T> serializer, SerializerFeatures features)
         {
             var iter = values.GetEnumerator();
             Write(ref state, fieldNumber, category, wireType, ref iter, serializer, features);
         }
-        internal override void WritePacked(ref ProtoWriter.State state, ImmutableList<T> values, IMeasuringSerializer<T> serializer, WireType wireType)
+        public override void WritePacked(ref ProtoWriter.State state, ImmutableList<T> values, IMeasuringSerializer<T> serializer, WireType wireType)
         {
             var iter = values.GetEnumerator();
             WritePacked(ref state, ref iter, serializer, wireType);
@@ -149,7 +149,7 @@ namespace ProtoBuf.Serializers
             => values.Clear();
         protected override int TryGetCount(IImmutableList<T> values) => TryGetCountDefault(values);
 
-        internal override long Measure(IImmutableList<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
+        public override long Measure(IImmutableList<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
         {
             var iter = values.GetEnumerator();
             try
@@ -161,7 +161,7 @@ namespace ProtoBuf.Serializers
                 iter?.Dispose();
             }
         }
-        internal override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, IImmutableList<T> values, ISerializer<T> serializer, SerializerFeatures features)
+        public override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, IImmutableList<T> values, ISerializer<T> serializer, SerializerFeatures features)
         {
             var iter = values.GetEnumerator();
             try
@@ -173,7 +173,7 @@ namespace ProtoBuf.Serializers
                 iter?.Dispose();
             }
         }
-        internal override void WritePacked(ref ProtoWriter.State state, IImmutableList<T> values, IMeasuringSerializer<T> serializer, WireType wireType)
+        public override void WritePacked(ref ProtoWriter.State state, IImmutableList<T> values, IMeasuringSerializer<T> serializer, WireType wireType)
         {
             var iter = values.GetEnumerator();
             try
@@ -197,17 +197,17 @@ namespace ProtoBuf.Serializers
             => values.Clear();
         protected override int TryGetCount(ImmutableHashSet<T> values) => values is null ? 0 : values.Count;
 
-        internal override long Measure(ImmutableHashSet<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
+        public override long Measure(ImmutableHashSet<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
         {
             var iter = values.GetEnumerator();
             return Measure(ref iter, serializer, context, wireType);
         }
-        internal override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, ImmutableHashSet<T> values, ISerializer<T> serializer, SerializerFeatures features)
+        public override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, ImmutableHashSet<T> values, ISerializer<T> serializer, SerializerFeatures features)
         {
             var iter = values.GetEnumerator();
             Write(ref state, fieldNumber, category, wireType, ref iter, serializer, features);
         }
-        internal override void WritePacked(ref ProtoWriter.State state, ImmutableHashSet<T> values, IMeasuringSerializer<T> serializer, WireType wireType)
+        public override void WritePacked(ref ProtoWriter.State state, ImmutableHashSet<T> values, IMeasuringSerializer<T> serializer, WireType wireType)
         {
             var iter = values.GetEnumerator();
             WritePacked(ref state, ref iter, serializer, wireType);
@@ -223,17 +223,17 @@ namespace ProtoBuf.Serializers
             => values.Clear();
         protected override int TryGetCount(ImmutableSortedSet<T> values) => values is null ? 0 : values.Count;
 
-        internal override long Measure(ImmutableSortedSet<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
+        public override long Measure(ImmutableSortedSet<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
         {
             var iter = values.GetEnumerator();
             return Measure(ref iter, serializer, context, wireType);
         }
-        internal override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, ImmutableSortedSet<T> values, ISerializer<T> serializer, SerializerFeatures features)
+        public override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, ImmutableSortedSet<T> values, ISerializer<T> serializer, SerializerFeatures features)
         {
             var iter = values.GetEnumerator();
             Write(ref state, fieldNumber, category, wireType, ref iter, serializer, features);
         }
-        internal override void WritePacked(ref ProtoWriter.State state, ImmutableSortedSet<T> values, IMeasuringSerializer<T> serializer, WireType wireType)
+        public override void WritePacked(ref ProtoWriter.State state, ImmutableSortedSet<T> values, IMeasuringSerializer<T> serializer, WireType wireType)
         {
             var iter = values.GetEnumerator();
             WritePacked(ref state, ref iter, serializer, wireType);
@@ -249,7 +249,7 @@ namespace ProtoBuf.Serializers
             => values.Clear();
         protected override int TryGetCount(IImmutableSet<T> values) => TryGetCountDefault(values);
 
-        internal override long Measure(IImmutableSet<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
+        public override long Measure(IImmutableSet<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
         {
             var iter = values.GetEnumerator();
             try
@@ -261,7 +261,7 @@ namespace ProtoBuf.Serializers
                 iter?.Dispose();
             }
         }
-        internal override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, IImmutableSet<T> values, ISerializer<T> serializer, SerializerFeatures features)
+        public override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, IImmutableSet<T> values, ISerializer<T> serializer, SerializerFeatures features)
         {
             var iter = values.GetEnumerator();
             try
@@ -273,7 +273,7 @@ namespace ProtoBuf.Serializers
                 iter?.Dispose();
             }
         }
-        internal override void WritePacked(ref ProtoWriter.State state, IImmutableSet<T> values, IMeasuringSerializer<T> serializer, WireType wireType)
+        public override void WritePacked(ref ProtoWriter.State state, IImmutableSet<T> values, IMeasuringSerializer<T> serializer, WireType wireType)
         {
             var iter = values.GetEnumerator();
             try
@@ -305,17 +305,17 @@ namespace ProtoBuf.Serializers
             => values.Clear();
         protected override int TryGetCount(ImmutableStack<T> values) => (values is null || values.IsEmpty) ? 0 : -1;
 
-        internal override long Measure(ImmutableStack<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
+        public override long Measure(ImmutableStack<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
         {
             var iter = new Enumerator(values);
             return Measure(ref iter, serializer, context, wireType);
         }
-        internal override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, ImmutableStack<T> values, ISerializer<T> serializer, SerializerFeatures features)
+        public override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, ImmutableStack<T> values, ISerializer<T> serializer, SerializerFeatures features)
         {
             var iter = new Enumerator(values);
             Write(ref state, fieldNumber, category, wireType, ref iter, serializer, features);
         }
-        internal override void WritePacked(ref ProtoWriter.State state, ImmutableStack<T> values, IMeasuringSerializer<T> serializer, WireType wireType)
+        public override void WritePacked(ref ProtoWriter.State state, ImmutableStack<T> values, IMeasuringSerializer<T> serializer, WireType wireType)
         {
             var iter = new Enumerator(values);
             WritePacked(ref state, ref iter, serializer, wireType);
@@ -364,7 +364,7 @@ namespace ProtoBuf.Serializers
             }
         }
 
-        internal override long Measure(IImmutableStack<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
+        public override long Measure(IImmutableStack<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
         {
             var iter = values.GetEnumerator();
             try
@@ -376,7 +376,7 @@ namespace ProtoBuf.Serializers
                 iter?.Dispose();
             }
         }
-        internal override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, IImmutableStack<T> values, ISerializer<T> serializer, SerializerFeatures features)
+        public override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, IImmutableStack<T> values, ISerializer<T> serializer, SerializerFeatures features)
         {
             var iter = values.GetEnumerator();
             try
@@ -388,7 +388,7 @@ namespace ProtoBuf.Serializers
                 iter?.Dispose();
             }
         }
-        internal override void WritePacked(ref ProtoWriter.State state, IImmutableStack<T> values, IMeasuringSerializer<T> serializer, WireType wireType)
+        public override void WritePacked(ref ProtoWriter.State state, IImmutableStack<T> values, IMeasuringSerializer<T> serializer, WireType wireType)
         {
             var iter = values.GetEnumerator();
             try
@@ -418,17 +418,17 @@ namespace ProtoBuf.Serializers
             => values.Clear();
         protected override int TryGetCount(ImmutableQueue<T> values) => values is null || values.IsEmpty ? 0 : -1;
 
-        internal override long Measure(ImmutableQueue<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
+        public override long Measure(ImmutableQueue<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
         {
             var iter = new Enumerator(values);
             return Measure(ref iter, serializer, context, wireType);
         }
-        internal override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, ImmutableQueue<T> values, ISerializer<T> serializer, SerializerFeatures features)
+        public override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, ImmutableQueue<T> values, ISerializer<T> serializer, SerializerFeatures features)
         {
             var iter = new Enumerator(values);
             Write(ref state, fieldNumber, category, wireType, ref iter, serializer, features);
         }
-        internal override void WritePacked(ref ProtoWriter.State state, ImmutableQueue<T> values, IMeasuringSerializer<T> serializer, WireType wireType)
+        public override void WritePacked(ref ProtoWriter.State state, ImmutableQueue<T> values, IMeasuringSerializer<T> serializer, WireType wireType)
         {
             var iter = new Enumerator(values);
             WritePacked(ref state, ref iter, serializer, wireType);
@@ -476,7 +476,7 @@ namespace ProtoBuf.Serializers
             }
         }
 
-        internal override long Measure(IImmutableQueue<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
+        public override long Measure(IImmutableQueue<T> values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
         {
             var iter = values.GetEnumerator();
             try
@@ -488,7 +488,7 @@ namespace ProtoBuf.Serializers
                 iter?.Dispose();
             }
         }
-        internal override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, IImmutableQueue<T> values, ISerializer<T> serializer, SerializerFeatures features)
+        public override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, IImmutableQueue<T> values, ISerializer<T> serializer, SerializerFeatures features)
         {
             var iter = values.GetEnumerator();
             try
@@ -500,7 +500,7 @@ namespace ProtoBuf.Serializers
                 iter?.Dispose();
             }
         }
-        internal override void WritePacked(ref ProtoWriter.State state, IImmutableQueue<T> values, IMeasuringSerializer<T> serializer, WireType wireType)
+        public override void WritePacked(ref ProtoWriter.State state, IImmutableQueue<T> values, IMeasuringSerializer<T> serializer, WireType wireType)
         {
             var iter = values.GetEnumerator();
             try

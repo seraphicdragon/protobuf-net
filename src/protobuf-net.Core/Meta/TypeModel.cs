@@ -1419,7 +1419,7 @@ namespace ProtoBuf.Meta
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static T ActivatorCreate<T>()
+        public static T ActivatorCreate<T>()
         {
             try
             {
