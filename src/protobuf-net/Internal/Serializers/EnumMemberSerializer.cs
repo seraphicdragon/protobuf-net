@@ -3,7 +3,15 @@ using System;
 
 namespace ProtoBuf.Internal.Serializers
 {
-    internal class EnumMemberSerializer : IRuntimeProtoSerializerNode, IDirectWriteNode
+    internal class EnumMemberSerializer : IRuntimeProtoSerializerNode, IDirectWriteNode,
+        IRuntimeProtoSerializerNode<sbyte>,
+        IRuntimeProtoSerializerNode<short>,
+        IRuntimeProtoSerializerNode<int>,
+        IRuntimeProtoSerializerNode<long>,
+        IRuntimeProtoSerializerNode<byte>,
+        IRuntimeProtoSerializerNode<ushort>,
+        IRuntimeProtoSerializerNode<uint>,
+        IRuntimeProtoSerializerNode<ulong>
     {
         bool IRuntimeProtoSerializerNode.IsScalar => true;
 
@@ -71,5 +79,85 @@ namespace ProtoBuf.Internal.Serializers
 
         void IDirectWriteNode.EmitDirectWrite(int fieldNumber, WireType wireType, CompilerContext ctx, Local valueFrom)
             => ((IDirectWriteNode)_tail).EmitDirectWrite(fieldNumber, wireType, ctx, valueFrom);
+
+        public void Write(ref ProtoWriter.State state, sbyte value)
+        {
+            SByteSerializer.Instance.Write(ref state, value);
+        }
+
+        public sbyte Read(ref ProtoReader.State state, sbyte value)
+        {
+            return SByteSerializer.Instance.Read(ref state, value);
+        }
+
+        public void Write(ref ProtoWriter.State state, short value)
+        {
+            Int16Serializer.Instance.Write(ref state, value);
+        }
+
+        public short Read(ref ProtoReader.State state, short value)
+        {
+            return Int16Serializer.Instance.Read(ref state, value);
+        }
+
+        public void Write(ref ProtoWriter.State state, int value)
+        {
+            Int16Serializer.Instance.Write(ref state, value);
+        }
+
+        public int Read(ref ProtoReader.State state, int value)
+        {
+            return Int32Serializer.Instance.Read(ref state, value);
+        }
+
+        public void Write(ref ProtoWriter.State state, long value)
+        {
+            Int64Serializer.Instance.Write(ref state, value);
+        }
+
+        public long Read(ref ProtoReader.State state, long value)
+        {
+            return Int64Serializer.Instance.Read(ref state, value);
+        }
+
+        public void Write(ref ProtoWriter.State state, byte value)
+        {
+            ByteSerializer.Instance.Write(ref state, value);
+        }
+
+        public byte Read(ref ProtoReader.State state, byte value)
+        {
+            return ByteSerializer.Instance.Read(ref state, value);
+        }
+
+        public void Write(ref ProtoWriter.State state, ushort value)
+        {
+            UInt16Serializer.Instance.Write(ref state, value);
+        }
+
+        public ushort Read(ref ProtoReader.State state, ushort value)
+        {
+            return UInt16Serializer.Instance.Read(ref state, value);
+        }
+
+        public void Write(ref ProtoWriter.State state, uint value)
+        {
+            UInt32Serializer.Instance.Write(ref state, value);
+        }
+
+        public uint Read(ref ProtoReader.State state, uint value)
+        {
+            return UInt32Serializer.Instance.Read(ref state, value);
+        }
+
+        public void Write(ref ProtoWriter.State state, ulong value)
+        {
+            UInt64Serializer.Instance.Write(ref state, value);
+        }
+
+        public ulong Read(ref ProtoReader.State state, ulong value)
+        {
+            return UInt64Serializer.Instance.Read(ref state, value);
+        }
     }
 }

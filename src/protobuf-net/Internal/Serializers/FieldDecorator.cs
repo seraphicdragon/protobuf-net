@@ -1,20 +1,24 @@
-﻿using ProtoBuf.Internal;
+﻿
+using ProtoBuf.Meta;
+using ProtoBuf.Serializers;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 
 namespace ProtoBuf.Internal.Serializers
 {
-    internal sealed class FieldDecorator : ProtoDecoratorBase
+    internal class FieldDecorator : ProtoDecoratorBase
     {
+        protected static readonly Dictionary<Type, ConstructorInfo> fieldDecoratorConstructors = new Dictionary<Type, ConstructorInfo>();
         public override Type ExpectedType { get; }
 
-        private readonly FieldInfo field;
+        protected readonly FieldInfo field;
 
         public override bool RequiresOldValue => true;
         public override bool ReturnsValue => false;
 
-        public FieldDecorator(Type forType, FieldInfo field, IRuntimeProtoSerializerNode tail) : base(tail)
+        public FieldDecorator(ValueMember valueMember, Type forType, FieldInfo field, IRuntimeProtoSerializerNode tail) : base(valueMember, tail)
         {
             if (tail is null) ThrowHelper.ThrowArgumentNullException(nameof(tail));
             if (field is null) ThrowHelper.ThrowArgumentNullException(nameof(field));
@@ -26,8 +30,26 @@ namespace ProtoBuf.Internal.Serializers
         public override void Write(ref ProtoWriter.State state, object value)
         {
             Debug.Assert(value is not null);
-            value = field.GetValue(value);
-            if (value is not null) Tail.Write(ref state, value);
+            ICustomDecoratorSerializable serializable = value as ICustomDecoratorSerializable;
+            if (serializable != null && serializable.CanWrite(ValueMember))
+            {
+                TagDecorator tagDecorator = Tail as TagDecorator;
+                
+
+                if (tagDecorator != null)
+                    tagDecorator.WriteFieldHeader(ref state);
+                
+
+                if (!serializable.TryWrite(ref state, ValueMember, EndTail))
+                {
+                    throw new InvalidOperationException("Error occurred!");
+                }
+            }
+            else
+            {
+                value = field.GetValue(value);
+                if (value is not null) Tail.Write(ref state, value);
+            }
         }
 
         public override object Read(ref ProtoReader.State state, object value)
@@ -104,5 +126,85 @@ namespace ProtoBuf.Internal.Serializers
                 }
             }
         }
+
+
+
+        internal static FieldDecorator CreateInstance(Type memberType, ValueMember valueMember, Type forType, FieldInfo field, IRuntimeProtoSerializerNode tail)
+        {
+            if (fieldDecoratorConstructors.TryGetValue(memberType, out ConstructorInfo constructor))
+            {
+
+                // Example of invoking the constructor
+                object[] constructorArgs = new object[] { valueMember, forType, field, tail };
+                object instance = constructor.Invoke(constructorArgs);
+
+                return instance as FieldDecorator;
+            }
+            throw new InvalidOperationException("Failed to find FieldDecorator constructor for this type: " + memberType);
+        }
     }
+
+    internal sealed class FieldDecoractor<T> : FieldDecorator, IRuntimeProtoSerializerNode<T> where T : struct, ICustomDecoratorSerializable
+    {
+        public FieldDecoractor(ValueMember valueMember, Type forType, FieldInfo field, IRuntimeProtoSerializerNode tail) : base(valueMember, forType, field, tail)
+        {
+        }
+
+        public void Write(ref ProtoWriter.State state, T value)
+        {
+            if (value.CanWrite(ValueMember))
+            {
+                TagDecorator tagDecorator = Tail as TagDecorator;
+
+
+                if (tagDecorator != null)
+                    tagDecorator.WriteFieldHeader(ref state);
+
+
+                if (!value.TryWrite(ref state, ValueMember, EndTail))
+                {
+                    throw new InvalidOperationException("Error occurred!");
+                }
+            }
+            else
+            {
+                value = (T)field.GetValue(value);
+                Tail.Write(ref state, value);
+            }
+        }
+
+        public T Read(ref ProtoReader.State state, T value)
+        {
+            object newValue = Tail.Read(ref state, Tail.RequiresOldValue ? field.GetValue(value) : null);
+            if (newValue is not null) field.SetValue(value, newValue);
+            return default;
+        }
+
+        internal static void CreateType()
+        { // Get the Type object for the constructed generic type (e.g., GenericClass<int>)
+            Type constructedGenericType = typeof(FieldDecoractor<T>);
+
+            // Define the parameter types for the desired constructor
+            Type[] constructorParameterTypes = new Type[] { typeof(ValueMember), typeof(Type), typeof(FieldInfo), typeof(IRuntimeProtoSerializerNode) };
+
+            // Get the public constructor with the specified parameter types
+            ConstructorInfo constructor = constructedGenericType.GetConstructor(
+                BindingFlags.Public | BindingFlags.Instance,
+                null, // Binder (optional, use null for default)
+                constructorParameterTypes,
+                null // Parameter modifiers (optional, use null)
+            );
+
+            if (constructor != null)
+            {
+                
+            }
+            else
+            {
+                throw new InvalidOperationException("Failed to find a constructor for this type: " +  typeof(FieldDecoractor<T>));
+            }
+            fieldDecoratorConstructors.Add(typeof(T), constructor);
+        }
+    }
+
 }

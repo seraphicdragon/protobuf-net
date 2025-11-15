@@ -74,6 +74,8 @@ namespace ProtoBuf.Serializers
         {
             if (serializer is null) return null;
 
+            return serializer;
+
             try
             {
                 var features = serializer.Features;

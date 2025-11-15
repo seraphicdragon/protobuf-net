@@ -1,14 +1,39 @@
-﻿using System;
+﻿using ProtoBuf.Meta;
+using System;
 
 namespace ProtoBuf.Internal.Serializers
 {
     internal abstract class ProtoDecoratorBase : IRuntimeProtoSerializerNode
     {
+        private IRuntimeProtoSerializerNode endTail = null;
+        private readonly ValueMember valueMember;
         public virtual bool IsScalar => Tail.IsScalar;
         public abstract Type ExpectedType { get; }
         protected readonly IRuntimeProtoSerializerNode Tail;
-        protected ProtoDecoratorBase(IRuntimeProtoSerializerNode tail)
+
+        public IRuntimeProtoSerializerNode EndTail
         {
+            get
+            {
+                if(endTail == null)
+                {
+                    IRuntimeProtoSerializerNode currentTail = Tail;
+                    while (currentTail != null)
+                    {
+                        endTail = currentTail;
+                        ProtoDecoratorBase decorator = currentTail as ProtoDecoratorBase;
+                        if (decorator == null)
+                            break;
+                        
+                        currentTail = decorator.Tail;
+                    }
+                }
+                return endTail;
+            }
+        }
+        protected ProtoDecoratorBase(ValueMember valueMember, IRuntimeProtoSerializerNode tail)
+        {
+            this.valueMember = valueMember;
             this.Tail = tail;
         }
         public abstract bool ReturnsValue { get; }
@@ -20,5 +45,7 @@ namespace ProtoBuf.Internal.Serializers
         protected abstract void EmitWrite(Compiler.CompilerContext ctx, Compiler.Local valueFrom);
         void IRuntimeProtoSerializerNode.EmitRead(Compiler.CompilerContext ctx, Compiler.Local entity) { EmitRead(ctx, entity); }
         protected abstract void EmitRead(Compiler.CompilerContext ctx, Compiler.Local valueFrom);
+
+        public ValueMember ValueMember { get { return valueMember; } }
     }
 }

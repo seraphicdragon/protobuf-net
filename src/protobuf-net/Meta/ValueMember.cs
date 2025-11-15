@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace ProtoBuf.Meta
 {
@@ -235,7 +236,7 @@ namespace ProtoBuf.Meta
         }
 
         private IRuntimeProtoSerializerNode serializer;
-        internal IRuntimeProtoSerializerNode Serializer
+        public IRuntimeProtoSerializerNode Serializer
         {
             get
             {
@@ -480,6 +481,9 @@ namespace ProtoBuf.Meta
                 }
             }
         }
+
+        private static readonly Type customizableSerializableType = typeof(ICustomDecoratorSerializable);
+
         private IRuntimeProtoSerializerNode BuildSerializer()
         {
             int opaqueToken = 0;
@@ -533,27 +537,39 @@ namespace ProtoBuf.Meta
                         // useful to know that we can at least get a suitable serializer
                         ser = AnyTypeSerializer.Create(MemberType, valueFeatures, CompatibilityLevel, DataFormat);
                     }
-                    ser = new TagDecorator(FieldNumber, wireType, IsStrict, ser);
+                    ser = new TagDecorator(this, FieldNumber, wireType, IsStrict, ser);
 
                     if (_defaultValue is not null && !IsRequired && getSpecified is null)
                     {   // note: "ShouldSerialize*" / "*Specified" / etc ^^^^ take precedence over defaultValue,
                         // as does "IsRequired"
-                        ser = new DefaultValueDecorator(_defaultValue, ser);
+                        ser = new DefaultValueDecorator(this, _defaultValue, ser);
                     }
                     if (MemberType == typeof(Uri))
                     {
-                        ser = new UriDecorator(ser);
+                        ser = new UriDecorator(this, ser);
                     }
                 }
                 if (member is not null)
                 {
                     if (member is PropertyInfo prop)
                     {
-                        ser = new PropertyDecorator(ParentType, prop, ser);
+                        ser = new PropertyDecorator(this, ParentType, prop, ser);
                     }
                     else if (member is FieldInfo fld)
                     {
-                        ser = new FieldDecorator(ParentType, fld, ser);
+                        if (customizableSerializableType.IsAssignableFrom(MemberType) &&
+                            MemberType.IsValueType)
+                        {
+                            RuntimeHelpers.RunClassConstructor(MemberType.TypeHandle);
+                            ser = FieldDecorator.CreateInstance(MemberType, this, ParentType, fld, ser);
+                        }else if(customizableSerializableType.IsAssignableFrom(ParentType) &&
+                            ParentType.IsValueType)
+                        {
+                            RuntimeHelpers.RunClassConstructor(ParentType.TypeHandle);
+                            ser = FieldDecorator.CreateInstance(ParentType, this, ParentType, fld, ser);
+                        }
+                        else
+                            ser = new FieldDecorator(this, ParentType, fld, ser);
                     }
                     else
                     {
@@ -562,7 +578,7 @@ namespace ProtoBuf.Meta
 
                     if (getSpecified is not null || setSpecified is not null)
                     {
-                        ser = new MemberSpecifiedDecorator(getSpecified, setSpecified, ser);
+                        ser = new MemberSpecifiedDecorator(this, getSpecified, setSpecified, ser);
                     }
                 }
                 return ser;

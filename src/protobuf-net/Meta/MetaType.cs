@@ -44,6 +44,9 @@ namespace ProtoBuf.Meta
             return Type.ToString();
         }
 
+        private SerializerFeatures  metaTypeFeatures;
+        public SerializerFeatures MetaTypeFeatures => metaTypeFeatures;
+
         IRuntimeProtoSerializerNode ISerializerProxy.Serializer => Serializer;
         private MetaType baseType;
 
@@ -448,7 +451,7 @@ namespace ProtoBuf.Meta
         public Type Type { get; }
 
         private IProtoTypeSerializer _serializer;
-        internal IProtoTypeSerializer Serializer
+        public IProtoTypeSerializer Serializer
         {
             get
             {
@@ -505,9 +508,12 @@ namespace ProtoBuf.Meta
             => (baseType is not null && baseType != this) || (_subTypes?.Count ?? 0) > 0;
         private IProtoTypeSerializer BuildSerializer()
         {
+
+            IProtoTypeSerializer externalSerialzier = null;
+
             if (SerializerType is not null)
             {
-                return ExternalSerializer.Create(Type, SerializerType);
+                externalSerialzier = ExternalSerializer.Create(Type, SerializerType);
             }
             Validate();
             var repeated = model.TryGetRepeatedProvider(Type);
@@ -527,9 +533,17 @@ namespace ProtoBuf.Meta
                 {
                     CompatibilityLevel = CompatibilityLevel
                 };
+
+                
+                if(externalSerialzier != null)
+                {
+                    metaTypeFeatures = GetFeatures();
+                    return externalSerialzier;
+                }
+
                 return TypeSerializer.Create(Type, new int[] { ProtoBuf.Serializer.ListItemTag }, new IRuntimeProtoSerializerNode[] { fakeMember.Serializer },
                     null, true, true, !IgnoreUnknownSubTypes, null,
-                    constructType, factory, GetInheritanceRoot(), GetFeatures());
+                    constructType, factory, GetInheritanceRoot(), metaTypeFeatures = GetFeatures());
             }
 
             bool involvedInInheritance = HasRealInheritance();
@@ -563,6 +577,13 @@ namespace ProtoBuf.Meta
                     features = ser.Features;
                     serializer = ser;
                 }
+
+                if(externalSerialzier != null)
+                {
+                    metaTypeFeatures = features;
+                    return externalSerialzier;
+                }
+
                 return (IProtoTypeSerializer)Activator.CreateInstance(typeof(SurrogateSerializer<>).MakeGenericType(Type),
                     args: new object[] { surrogateType, underlyingToSurrogate, surrogateToUnderlying, serializer, features });
             }
@@ -570,12 +591,28 @@ namespace ProtoBuf.Meta
             {
                 if (involvedInInheritance) ThrowTupleTypeWithInheritance(Type);
                 ConstructorInfo ctor = ResolveTupleConstructor(Type, out MemberInfo[] mapping) ?? throw new InvalidOperationException();
+
+                if (externalSerialzier != null)
+                {
+                    metaTypeFeatures = GetFeatures();
+                    return externalSerialzier;
+                }
                 return (IProtoTypeSerializer)Activator.CreateInstance(typeof(TupleSerializer<>).MakeGenericType(Type),
-                    args: new object[] { model, ctor, mapping, GetFeatures(), CompatibilityLevel });
+                    args: new object[] { model, ctor, mapping, metaTypeFeatures = GetFeatures(), CompatibilityLevel });
             }
 
             if (HasFields) Fields.TrimExcess();
             if (HasEnums) Enums.TrimExcess();
+
+            if (HasFields)
+            {
+                foreach (ValueMember valueMember in Fields)
+                {
+                    _fieldsSet.Add(valueMember);
+                }
+                _fieldsSet.TrimExcess();
+            }
+
 
             int fieldCount = _fields?.Count ?? 0;
             int subTypeCount = _subTypes?.Count ?? 0;
@@ -622,8 +659,15 @@ namespace ProtoBuf.Meta
                 baseCtorCallbacks.CopyTo(arr, 0);
                 Array.Reverse(arr);
             }
+
+            if (externalSerialzier != null)
+            {
+                metaTypeFeatures = GetFeatures();
+                return externalSerialzier;
+            }
+
             return TypeSerializer.Create(Type, fieldNumbers, serializers, arr, baseType is null, UseConstructor, !IgnoreUnknownSubTypes,
-                callbacks, constructType, factory, GetInheritanceRoot(), GetFeatures());
+                callbacks, constructType, factory, GetInheritanceRoot(), metaTypeFeatures = GetFeatures());
         }
 
         [Flags]
@@ -1699,7 +1743,20 @@ namespace ProtoBuf.Meta
             }
         }
 
+        /// <summary>
+        /// Returns true if this value member is in this type.
+        /// </summary>
+        /// <param name="member"></param>
+        /// <returns></returns>
+        public bool ContainsValueMember(ValueMember member)
+        {
+            if (HasFields)
+                return _fieldsSet.Contains(member);
+            return false;
+        }
+
         private List<ValueMember> _fields = null;
+        private HashSet<ValueMember> _fieldsSet = new HashSet<ValueMember>();
         internal bool HasFields => _fields is not null && _fields.Count != 0;
         internal List<ValueMember> Fields => _fields ??= new List<ValueMember>();
 

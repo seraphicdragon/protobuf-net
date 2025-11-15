@@ -4,7 +4,7 @@ using System.Reflection;
 
 namespace ProtoBuf.Internal.Serializers
 {
-    internal sealed class Int32Serializer : IRuntimeProtoSerializerNode, IDirectWriteNode
+    internal sealed class Int32Serializer : IRuntimeProtoSerializerNode, IDirectWriteNode, IRuntimeProtoSerializerNode<int>
     {
         bool IRuntimeProtoSerializerNode.IsScalar => true;
         private Int32Serializer() { }
@@ -48,6 +48,16 @@ namespace ProtoBuf.Internal.Serializers
             ctx.LoadValue(loc);
             ctx.EmitCall(typeof(ProtoWriter.State).GetMethod(nameof(ProtoWriter.State.WriteInt32Varint), BindingFlags.Instance | BindingFlags.Public,
                 null, new[] { typeof(int), typeof(int) }, null));
+        }
+
+        public void Write(ref ProtoWriter.State state, int value)
+        {
+            state.WriteInt32(value);
+        }
+
+        public int Read(ref ProtoReader.State state, int value)
+        {
+            return state.ReadInt32();
         }
     }
 }

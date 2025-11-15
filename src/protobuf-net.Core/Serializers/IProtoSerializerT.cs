@@ -136,7 +136,7 @@ namespace ProtoBuf.Serializers
         // RESERVED: 1 << 30, see FromAux
     }
 
-    internal static class SerializerFeaturesExtensions
+    public static class SerializerFeaturesExtensions
     {
         [MethodImpl(ProtoReader.HotPath)]
         public static SerializerFeatures AsFeatures(this WireType wireType)

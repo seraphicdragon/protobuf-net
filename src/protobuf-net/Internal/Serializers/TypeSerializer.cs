@@ -104,7 +104,7 @@ namespace ProtoBuf.Internal.Serializers
 
         public override bool IsSubType => true;
     }
-    internal class TypeSerializer<T> : TypeSerializer, ISerializer<T>, IFactory<T>, IProtoTypeSerializer
+    internal class TypeSerializer<T> : TypeSerializer, ISerializer<T>, IFactory<T>, IProtoTypeSerializer, IProtoTypeSerializer<T>
     {
         bool IRuntimeProtoSerializerNode.IsScalar => false;
         public virtual bool HasInheritance => false;
@@ -328,6 +328,28 @@ namespace ProtoBuf.Internal.Serializers
             return null;
         }
 
+        private IRuntimeProtoSerializerNode GetMoreSpecificSerializer(T value)
+        {
+            if (!CanHaveInheritance) return null;
+            Type actualType = value.GetType();
+            if (actualType == ExpectedType) return null;
+
+            for (int i = 0; i < serializers.Length; i++)
+            {
+                IRuntimeProtoSerializerNode ser = serializers[i];
+                if (ser is IProtoTypeSerializer ts && ts.IsSubType && ser.ExpectedType.IsAssignableFrom(actualType))
+                {
+                    return ser;
+                }
+            }
+            if (actualType == constructType) return null; // needs to be last in case the default concrete type is also a known sub-type
+            if (GetFlag(StateFlags.AssertKnownType))
+            {
+                TypeModel.ThrowUnexpectedSubtype(ExpectedType, actualType); // might throw (if not a proxy)
+            }
+            return null;
+        }
+
         protected void SerializeImpl(ref ProtoWriter.State state, T value)
         {
             Callback(ref value, TypeModel.CallbackType.BeforeSerialize, state.Context);
@@ -336,7 +358,7 @@ namespace ProtoBuf.Internal.Serializers
             if (CanHaveInheritance)
             {
                 IRuntimeProtoSerializerNode next = GetMoreSpecificSerializer(value);
-                if (next is object) next.Write(ref state, value);
+                if (next is object) next.Write(ref state, value); // This is fine... this is totally a class at this point!!!
             }
 
             // write all actual fields
@@ -347,7 +369,11 @@ namespace ProtoBuf.Internal.Serializers
                 if (!(ser is IProtoTypeSerializer ts && ts.IsSubType))
                 {
                     //Debug.WriteLine(": " + ser.ToString());
-                    ser.Write(ref state, value);
+                    IRuntimeProtoSerializerNode<T> casted = ser as IRuntimeProtoSerializerNode<T>;
+                    if (casted != null)
+                        casted.Write(ref state, value);
+                    else
+                        ser.Write(ref state, value);
                 }
             }
             //Debug.WriteLine("<< Writing fields for " + forType.FullName);

@@ -67,7 +67,7 @@ namespace ProtoBuf.Internal.Serializers
             ctx.EmitCall(type.GetMethod(nameof(SubTypeState<TParent>.ReadSubType)).MakeGenericMethod(typeof(TChild)));
         }
     }
-    internal class SubValueSerializer<T> : SubItemSerializer, IDirectWriteNode
+    internal class SubValueSerializer<T> : SubItemSerializer, IDirectWriteNode, IRuntimeProtoSerializerNode<T>
     {
         public override bool IsSubType => false;
 
@@ -201,6 +201,40 @@ namespace ProtoBuf.Internal.Serializers
 
         void IDirectWriteNode.EmitDirectWrite(int fieldNumber, WireType wireType, CompilerContext ctx, Local valueFrom)
             => SubItemSerializer.EmitWriteMessage<T>(fieldNumber, wireType, ctx, valueFrom, serializerType: MetaType.SerializerType);
+
+        public void Write(ref ProtoWriter.State state, T value)
+        {
+            var category = GetCategory();
+            switch (category)
+            {
+                case SerializerFeatures.CategoryMessageWrappedAtRoot:
+                case SerializerFeatures.CategoryMessage:
+                    state.WriteMessage<T>(default, value, CustomSerializer);
+                    break;
+                case SerializerFeatures.CategoryScalar:
+                    CustomSerializer.Write(ref state, value);
+                    break;
+                default:
+                    category.ThrowInvalidCategory();
+                    break;
+            }
+        }
+
+        public T Read(ref ProtoReader.State state, T value)
+        {
+            var category = GetCategory();
+            switch (category)
+            {
+                case SerializerFeatures.CategoryMessageWrappedAtRoot:
+                case SerializerFeatures.CategoryMessage:
+                    return state.ReadMessage<T>(default, value, CustomSerializer);
+                case SerializerFeatures.CategoryScalar:
+                    return CustomSerializer.Read(ref state, value);
+                default:
+                    category.ThrowInvalidCategory();
+                    return default;
+            }
+        }
     }
 
 

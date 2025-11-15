@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ProtoBuf.Meta;
+using System;
 using System.Diagnostics;
 
 namespace ProtoBuf.Internal.Serializers
@@ -7,7 +8,7 @@ namespace ProtoBuf.Internal.Serializers
     {
         public override bool IsScalar => true;
         private static readonly Type expectedType = typeof(Uri);
-        public UriDecorator(IRuntimeProtoSerializerNode tail) : base(tail) { }
+        public UriDecorator(ValueMember valueMember, IRuntimeProtoSerializerNode tail) : base(valueMember, tail) { }
 
         public override Type ExpectedType => expectedType;
 

@@ -1,4 +1,5 @@
 ﻿using ProtoBuf.Internal;
+using ProtoBuf.Meta;
 using System;
 using System.Diagnostics;
 using System.Reflection;
@@ -14,7 +15,7 @@ namespace ProtoBuf.Internal.Serializers
         private readonly bool readOptionsWriteValue;
         private readonly MethodInfo shadowSetter;
 
-        public PropertyDecorator(Type forType, PropertyInfo property, IRuntimeProtoSerializerNode tail) : base(tail)
+        public PropertyDecorator(ValueMember valueMember, Type forType, PropertyInfo property, IRuntimeProtoSerializerNode tail) : base(valueMember, tail)
         {
             if (tail is null) ThrowHelper.ThrowArgumentNullException(nameof(tail));
             if (property is null) ThrowHelper.ThrowArgumentNullException(nameof(property));

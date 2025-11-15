@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace ProtoBuf.Internal.Serializers
 {
-    internal sealed class DecimalSerializer : IRuntimeProtoSerializerNode
+    internal sealed class DecimalSerializer : IRuntimeProtoSerializerNode, IRuntimeProtoSerializerNode<decimal>
     {
         bool IRuntimeProtoSerializerNode.IsScalar => _variant == Variant.String;
 
@@ -71,6 +71,28 @@ namespace ProtoBuf.Internal.Serializers
                 Variant.String => nameof(BclHelpers.ReadDecimalString),
                 _ => nameof(BclHelpers.ReadDecimal),
             }, ExpectedType);
+        }
+
+        public void Write(ref ProtoWriter.State state, decimal value)
+        {
+            switch (_variant)
+            {
+                case Variant.String:
+                    BclHelpers.WriteDecimalString(ref state, value);
+                    break;
+                default:
+                    BclHelpers.WriteDecimal(ref state, value);
+                    break;
+            }
+        }
+
+        public decimal Read(ref ProtoReader.State state, decimal value)
+        {
+            return _variant switch
+            {
+                Variant.String => BclHelpers.ReadDecimalString(ref state),
+                _ => BclHelpers.ReadDecimal(ref state),
+            };
         }
     }
 }

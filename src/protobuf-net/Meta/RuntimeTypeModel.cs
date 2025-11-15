@@ -654,7 +654,7 @@ namespace ProtoBuf.Meta
             }
         }
 
-        internal IRuntimeProtoSerializerNode TryGetBasicTypeSerializer(Type type)
+        public IRuntimeProtoSerializerNode TryGetBasicTypeSerializer(Type type)
         {
             int idx = basicTypes.IndexOf(BasicTypeFinder, type);
 
@@ -2188,6 +2188,11 @@ namespace ProtoBuf.Meta
                 }
             }
         }
+        public static void RegisterCustomDecoratorSerializable<T>() where T : struct, ICustomDecoratorSerializable
+        {
+            FieldDecoractor<T>.CreateType();
+        }
+
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowDefaultAutoAddMissingTypes()

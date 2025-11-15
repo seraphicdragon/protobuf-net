@@ -88,7 +88,7 @@ namespace ProtoBuf.Meta
             if(dataFormat == DataFormat.Group) wireType = WireType.StartGroup; // only one exception
             
             IRuntimeProtoSerializerNode ser = SubItemSerializer.Create(derivedType.Type, derivedType, parentType);
-            return new TagDecorator(_fieldNumber, wireType, false, ser);
+            return new TagDecorator(null,_fieldNumber, wireType, false, ser);
         }
     }
 }

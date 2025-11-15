@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace ProtoBuf.Internal.Serializers
 {
-    internal sealed class UInt64Serializer : IRuntimeProtoSerializerNode
+    internal sealed class UInt64Serializer : IRuntimeProtoSerializerNode, IRuntimeProtoSerializerNode<ulong>
     {
         bool IRuntimeProtoSerializerNode.IsScalar => true;
         private UInt64Serializer() { }
@@ -35,6 +35,16 @@ namespace ProtoBuf.Internal.Serializers
         void IRuntimeProtoSerializerNode.EmitRead(Compiler.CompilerContext ctx, Compiler.Local entity)
         {
             ctx.EmitStateBasedRead(nameof(ProtoReader.State.ReadUInt64), ExpectedType);
+        }
+
+        public void Write(ref ProtoWriter.State state, ulong value)
+        {
+            state.WriteUInt64(value);
+        }
+
+        public ulong Read(ref ProtoReader.State state, ulong value)
+        {
+            return state.ReadUInt64();
         }
     }
 }

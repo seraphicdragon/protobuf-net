@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace ProtoBuf.Internal.Serializers
 {
-    internal sealed class CharSerializer : UInt16Serializer
+    internal sealed class CharSerializer : UInt16Serializer, IRuntimeProtoSerializerNode<char>
     {
         private CharSerializer() : base() { }
         internal static new readonly CharSerializer Instance = new CharSerializer();
@@ -20,6 +20,16 @@ namespace ProtoBuf.Internal.Serializers
         public override object Read(ref ProtoReader.State state, object value)
         {
             Debug.Assert(value is null); // since replaces
+            return (char)state.ReadUInt16();
+        }
+
+        public void Write(ref ProtoWriter.State state, char value)
+        {
+            state.WriteUInt16(value);
+        }
+
+        public char Read(ref ProtoReader.State state, char value)
+        {
             return (char)state.ReadUInt16();
         }
 

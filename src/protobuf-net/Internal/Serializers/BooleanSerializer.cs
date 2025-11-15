@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace ProtoBuf.Internal.Serializers
 {
-    internal sealed class BooleanSerializer : IRuntimeProtoSerializerNode
+    internal sealed class BooleanSerializer : IRuntimeProtoSerializerNode, IRuntimeProtoSerializerNode<bool>
     {
         bool IRuntimeProtoSerializerNode.IsScalar => true;
         private BooleanSerializer() { }
@@ -35,6 +35,16 @@ namespace ProtoBuf.Internal.Serializers
         void IRuntimeProtoSerializerNode.EmitRead(Compiler.CompilerContext ctx, Compiler.Local entity)
         {
             ctx.EmitStateBasedRead(nameof(ProtoReader.State.ReadBoolean), ExpectedType);
+        }
+
+        public void Write(ref ProtoWriter.State state, bool value)
+        {
+            state.WriteBoolean(value);
+        }
+
+        public bool Read(ref ProtoReader.State state, bool value)
+        {
+            return state.ReadBoolean();
         }
     }
 }

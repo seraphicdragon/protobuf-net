@@ -43,7 +43,7 @@ namespace ProtoBuf.Internal.Serializers
 
                 if (repeated is null)
                 {
-                    serializer = new TagDecorator(i + 1, wireType, false, tail);
+                    serializer = new TagDecorator(null, i + 1, wireType, false, tail);
                 }
                 else if (repeated.IsMap)
                 {
