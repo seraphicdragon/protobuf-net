@@ -51,7 +51,7 @@ namespace ProtoBuf.Internal.Serializers
         private readonly int fieldNumber;
         private readonly WireType wireType;
 
-        private bool NeedsHint => ((int)wireType & ~7) != 0;
+        public bool NeedsHint => ((int)wireType & ~7) != 0;
 
         public override object Read(ref ProtoReader.State state, object value)
         {
@@ -120,5 +120,9 @@ namespace ProtoBuf.Internal.Serializers
             }
             Tail.EmitRead(ctx, valueFrom);
         }
+
+        public bool IsStrict => strict;
+
+        public WireType WireType => wireType;
     }
 }

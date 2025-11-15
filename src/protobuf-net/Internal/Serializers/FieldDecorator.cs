@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.Serialization;
 
 namespace ProtoBuf.Internal.Serializers
 {
@@ -31,7 +32,7 @@ namespace ProtoBuf.Internal.Serializers
         {
             Debug.Assert(value is not null);
             ICustomDecoratorSerializable serializable = value as ICustomDecoratorSerializable;
-            if (serializable != null && serializable.CanWrite(ValueMember))
+            if (serializable != null && serializable.TrySerializeMember(ValueMember))
             {
                 TagDecorator tagDecorator = Tail as TagDecorator;
                 
@@ -54,10 +55,30 @@ namespace ProtoBuf.Internal.Serializers
 
         public override object Read(ref ProtoReader.State state, object value)
         {
-            Debug.Assert(value is not null);
-            object newValue = Tail.Read(ref state, Tail.RequiresOldValue ? field.GetValue(value) : null);
-            if (newValue is not null) field.SetValue(value, newValue);
-            return null;
+            ICustomDecoratorSerializable serializable = value as ICustomDecoratorSerializable;
+            if (serializable != null && serializable.TrySerializeMember(ValueMember))
+            {
+                //  Debug.Assert(fieldNumber == state.FieldNumber);
+                TagDecorator tagDecorator = Tail as TagDecorator;
+                if (tagDecorator != null)
+                {
+                    if (tagDecorator.IsStrict) { state.Assert(tagDecorator.WireType); }
+                    else if (tagDecorator.NeedsHint) { state.Hint(tagDecorator.WireType); }
+                }
+
+                if (!serializable.TryRead(ref state, ValueMember, EndTail))
+                {
+                    throw new InvalidOperationException("Failed to read");
+                }
+                return serializable;
+            }
+            else
+            {
+                Debug.Assert(value is not null);
+                object newValue = Tail.Read(ref state, Tail.RequiresOldValue ? field.GetValue(value) : null);
+                if (newValue is not null) field.SetValue(value, newValue);
+                return null;
+            }
         }
 
         protected override void EmitWrite(Compiler.CompilerContext ctx, Compiler.Local valueFrom)
@@ -152,7 +173,7 @@ namespace ProtoBuf.Internal.Serializers
 
         public void Write(ref ProtoWriter.State state, T value)
         {
-            if (value.CanWrite(ValueMember))
+            if (value.TrySerializeMember(ValueMember))
             {
                 TagDecorator tagDecorator = Tail as TagDecorator;
 
@@ -173,11 +194,31 @@ namespace ProtoBuf.Internal.Serializers
             }
         }
 
-        public T Read(ref ProtoReader.State state, T value)
+        public T Read(ref ProtoReader.State state, T serializable)
         {
-            object newValue = Tail.Read(ref state, Tail.RequiresOldValue ? field.GetValue(value) : null);
-            if (newValue is not null) field.SetValue(value, newValue);
-            return default;
+            if (serializable.TrySerializeMember(ValueMember))
+            {
+                //  Debug.Assert(fieldNumber == state.FieldNumber);
+                TagDecorator tagDecorator = Tail as TagDecorator;
+                if (tagDecorator != null)
+                {
+                    if (tagDecorator.IsStrict) { state.Assert(tagDecorator.WireType); }
+                    else if (tagDecorator.NeedsHint) { state.Hint(tagDecorator.WireType); }
+                }
+
+                if (!serializable.TryRead(ref state, ValueMember, EndTail))
+                {
+                    throw new InvalidOperationException("Failed to read");
+                }
+                return serializable;
+            }
+            else
+            {
+
+                object newValue = Tail.Read(ref state, Tail.RequiresOldValue ? field.GetValue(serializable) : null);
+                if (newValue is not null) field.SetValue(serializable, newValue);
+                return (T)newValue;
+            }
         }
 
         internal static void CreateType()

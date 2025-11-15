@@ -5,7 +5,8 @@ namespace ProtoBuf.Serializers
 {
     public interface ICustomDecoratorSerializable
     {
-        bool CanWrite(ValueMember valueMember);
+        bool TrySerializeMember(ValueMember valueMember);
         bool TryWrite(ref ProtoWriter.State state, ValueMember valueMember, IRuntimeProtoSerializerNode tail);
+        bool TryRead(ref ProtoReader.State state, ValueMember valueMember, IRuntimeProtoSerializerNode endTail);
     }
 }

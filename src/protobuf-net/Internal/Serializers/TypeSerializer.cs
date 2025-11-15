@@ -415,20 +415,45 @@ namespace ProtoBuf.Internal.Serializers
                         {
                             // sub-types are implemented differently; pass the entire
                             // state through and unbox again to observe any changes
-                            bodyState = (TState)ser.Read(ref state, bodyState);
+                            IRuntimeProtoSerializerNode<TState> casted = ser as IRuntimeProtoSerializerNode<TState>;
+                            if (casted != null)
+                            {
+                                bodyState = casted.Read(ref state, bodyState);
+                            }
+                            else
+                                bodyState = (TState)ser.Read(ref state, bodyState);
                         }
                         else
                         {
                             var value = getter(ref bodyState);
-                            object boxed = value;
-                            object result = ser.Read(ref state, boxed);
-                            if (ser.ReturnsValue)
+
+                            IRuntimeProtoSerializerNode<T> casted = ser as IRuntimeProtoSerializerNode<T>;
+                            if (casted != null)
                             {
-                                setter(ref bodyState, (T)result);
+                                T boxed = value;
+                                T result = casted.Read(ref state, boxed);
+                                if (ser.ReturnsValue)
+                                {
+                                    setter(ref bodyState, result);
+                                }
+                                else if (ExpectedType.IsValueType)
+                                {   // make sure changes to structs are preserved
+                                    setter(ref bodyState, result);
+                                }
                             }
-                            else if (ExpectedType.IsValueType)
-                            {   // make sure changes to structs are preserved
-                                setter(ref bodyState, (T)boxed);
+                            else
+                            {
+
+                                object boxed = value;
+                                object result = ser.Read(ref state, boxed);
+                                if (ser.ReturnsValue)
+                                {
+                                    setter(ref bodyState, (T)result);
+                                }
+                                else if (ExpectedType.IsValueType)
+                                {   // make sure changes to structs are preserved
+                                    setter(ref bodyState, (T)boxed);
+                                }
                             }
                         }
 
