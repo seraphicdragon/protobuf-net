@@ -50,14 +50,14 @@ namespace ProtoBuf.Internal.Serializers
                 null, new[] { typeof(int), typeof(int) }, null));
         }
 
-        public void Write(ref ProtoWriter.State state, int value)
+        public void Write(ref ProtoWriter.State state, in int value)
         {
             state.WriteInt32(value);
         }
 
-        public int Read(ref ProtoReader.State state, int value)
+        public void Read(ref ProtoReader.State state, ref int value)
         {
-            return state.ReadInt32();
+            value = state.ReadInt32();
         }
     }
 }

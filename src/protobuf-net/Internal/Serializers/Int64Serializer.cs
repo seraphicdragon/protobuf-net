@@ -37,14 +37,14 @@ namespace ProtoBuf.Internal.Serializers
             ctx.EmitStateBasedRead(nameof(ProtoReader.State.ReadInt64), ExpectedType);
         }
 
-        public void Write(ref ProtoWriter.State state, long value)
+        public void Write(ref ProtoWriter.State state, in long value)
         {
             state.WriteInt64(value);
         }
 
-        public long Read(ref ProtoReader.State state, long value)
+        public void Read(ref ProtoReader.State state, ref long value)
         {
-            return state.ReadInt64();
+            value = state.ReadInt64();
         }
     }
 }

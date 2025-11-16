@@ -170,7 +170,7 @@ namespace ProtoBuf.Internal.Serializers
         {
         }
 
-        public void Write(ref ProtoWriter.State state, T value)
+        public void Write(ref ProtoWriter.State state, in T value)
         {
             if (value.TrySerializeMember(ValueMember))
             {
@@ -188,12 +188,12 @@ namespace ProtoBuf.Internal.Serializers
             }
             else
             {
-                value = (T)field.GetValue(value);
-                Tail.Write(ref state, value);
+                object obj = field.GetValue(value);
+                if (obj is not null) Tail.Write(ref state, obj);
             }
         }
 
-        public T Read(ref ProtoReader.State state, T serializable)
+        public void Read(ref ProtoReader.State state, ref T serializable)
         {
             if (serializable.TrySerializeMember(ValueMember))
             {
@@ -209,14 +209,13 @@ namespace ProtoBuf.Internal.Serializers
                 {
                     throw new InvalidOperationException("Failed to read");
                 }
-                return serializable;
             }
             else
             {
 
                 object newValue = Tail.Read(ref state, Tail.RequiresOldValue ? field.GetValue(serializable) : null);
                 if (newValue is not null) field.SetValue(serializable, newValue);
-                return (T)newValue;
+                serializable = (T)newValue;
             }
         }
 

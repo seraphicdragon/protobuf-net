@@ -87,84 +87,84 @@ namespace ProtoBuf.Internal.Serializers
         void IDirectWriteNode.EmitDirectWrite(int fieldNumber, WireType wireType, CompilerContext ctx, Local valueFrom)
             => ((IDirectWriteNode)_tail).EmitDirectWrite(fieldNumber, wireType, ctx, valueFrom);
 
-        public void Write(ref ProtoWriter.State state, sbyte value)
+        public void Write(ref ProtoWriter.State state, in sbyte value)
         {
-            SByteSerializer.Instance.Write(ref state, value);
+            SByteSerializer.Instance.Write(ref state, in value);
         }
 
-        public sbyte Read(ref ProtoReader.State state, sbyte value)
+        public void Read(ref ProtoReader.State state, ref sbyte value)
         {
-            return SByteSerializer.Instance.Read(ref state, value);
+            SByteSerializer.Instance.Read(ref state, ref value);
         }
 
-        public void Write(ref ProtoWriter.State state, short value)
+        public void Write(ref ProtoWriter.State state, in short value)
         {
-            Int16Serializer.Instance.Write(ref state, value);
+            Int16Serializer.Instance.Write(ref state, in value);
         }
 
-        public short Read(ref ProtoReader.State state, short value)
+        public void Read(ref ProtoReader.State state, ref short value)
         {
-            return Int16Serializer.Instance.Read(ref state, value);
+            Int16Serializer.Instance.Read(ref state, ref value);
         }
 
-        public void Write(ref ProtoWriter.State state, int value)
+        public void Write(ref ProtoWriter.State state, in int value)
         {
-            Int16Serializer.Instance.Write(ref state, value);
+            Int32Serializer.Instance.Write(ref state, in value);
         }
 
-        public int Read(ref ProtoReader.State state, int value)
+        public void Read(ref ProtoReader.State state, ref int value)
         {
-            return Int32Serializer.Instance.Read(ref state, value);
+            Int32Serializer.Instance.Read(ref state, ref value);
         }
 
-        public void Write(ref ProtoWriter.State state, long value)
+        public void Write(ref ProtoWriter.State state, in long value)
         {
-            Int64Serializer.Instance.Write(ref state, value);
+            Int64Serializer.Instance.Write(ref state, in value);
         }
 
-        public long Read(ref ProtoReader.State state, long value)
+        public void Read(ref ProtoReader.State state, ref long value)
         {
-            return Int64Serializer.Instance.Read(ref state, value);
+            Int64Serializer.Instance.Read(ref state, ref value);
         }
 
-        public void Write(ref ProtoWriter.State state, byte value)
+        public void Write(ref ProtoWriter.State state, in byte value)
         {
-            ByteSerializer.Instance.Write(ref state, value);
+            ByteSerializer.Instance.Write(ref state, in value);
         }
 
-        public byte Read(ref ProtoReader.State state, byte value)
+        public void Read(ref ProtoReader.State state,  ref byte value)
         {
-            return ByteSerializer.Instance.Read(ref state, value);
+            ByteSerializer.Instance.Read(ref state, value);
         }
 
-        public void Write(ref ProtoWriter.State state, ushort value)
+        public void Write(ref ProtoWriter.State state, in ushort value)
         {
-            UInt16Serializer.Instance.Write(ref state, value);
+            UInt16Serializer.Instance.Write(ref state, in value);
         }
 
-        public ushort Read(ref ProtoReader.State state, ushort value)
+        public void Read(ref ProtoReader.State state, ref ushort value)
         {
-            return UInt16Serializer.Instance.Read(ref state, value);
+            UInt16Serializer.Instance.Read(ref state, ref value);
         }
 
-        public void Write(ref ProtoWriter.State state, uint value)
+        public void Write(ref ProtoWriter.State state, in uint value)
         {
             UInt32Serializer.Instance.Write(ref state, value);
         }
 
-        public uint Read(ref ProtoReader.State state, uint value)
+        public void Read(ref ProtoReader.State state, ref uint value)
         {
-            return UInt32Serializer.Instance.Read(ref state, value);
+            UInt32Serializer.Instance.Read(ref state, ref value);
         }
 
-        public void Write(ref ProtoWriter.State state, ulong value)
+        public void Write(ref ProtoWriter.State state, in ulong value)
         {
-            UInt64Serializer.Instance.Write(ref state, value);
+            UInt64Serializer.Instance.Write(ref state, in value);
         }
 
-        public ulong Read(ref ProtoReader.State state, ulong value)
+        public void Read(ref ProtoReader.State state, ref ulong value)
         {
-            return UInt64Serializer.Instance.Read(ref state, value);
+            UInt64Serializer.Instance.Read(ref state, value);
         }
 
         internal static bool TryCreateInstance(Type enumType, out EnumMemberSerializer value)
@@ -278,58 +278,66 @@ namespace ProtoBuf.Internal.Serializers
         {
         }
 
-        public T Read(ref ProtoReader.State state, T value)
+        public void Read(ref ProtoReader.State state, ref T value)
         {
             switch (Type.GetTypeCode(typeof(T)))
             {
                 case TypeCode.SByte:
-                    return Convert(SByteSerializer.Instance.Read(ref state, default));
+                    value = Convert(SByteSerializer.Instance.Read(ref state, default));
+                    break;
                 case TypeCode.Int16:
-                    return Convert(Int16Serializer.Instance.Read(ref state, default));
+                    value = Convert(Int16Serializer.Instance.Read(ref state, default));
+                    break;
                 case TypeCode.Int32:
-                    return Convert(Int32Serializer.Instance.Read(ref state, default));
+                    value = Convert(Int32Serializer.Instance.Read(ref state, default));
+                    break;
                 case TypeCode.Int64:
-                    return Convert(Int64Serializer.Instance.Read(ref state, default));
+                    value = Convert(Int64Serializer.Instance.Read(ref state, default));
+                    break;
                 case TypeCode.Byte:
-                    return Convert(ByteSerializer.Instance.Read(ref state, default));
+                    value = Convert(ByteSerializer.Instance.Read(ref state, default));
+                    break;
                 case TypeCode.UInt16:
-                    return Convert(UInt16Serializer.Instance.Read(ref state, default));
+                    value = Convert(UInt16Serializer.Instance.Read(ref state, default));
+                    break;
                 case TypeCode.UInt32:
-                    return Convert(UInt32Serializer.Instance.Read(ref state, default));
+                    value = Convert(UInt32Serializer.Instance.Read(ref state, default));
+                    break;
                 case TypeCode.UInt64:
-                    return Convert(UInt64Serializer.Instance.Read(ref state, default));
+                    value = Convert(UInt64Serializer.Instance.Read(ref state, default));
+                    break;
                 default:
                     throw new InvalidOperationException("Failed to parse this type: " + Type.GetTypeCode(typeof(T)));
             }
         }
 
-        public void Write(ref ProtoWriter.State state, T value)
+        public void Write(ref ProtoWriter.State state, in T value)
         {
             switch( Type.GetTypeCode(typeof(T)))
             {
                 case TypeCode.SByte:
-                    SByteSerializer.Instance.Write(ref state, Convert<sbyte>(value));
+                    SByteSerializer.Instance.Write(ref state, Convert<sbyte>(in value));
                     break;
                 case TypeCode.Int16:
-                    Int16Serializer.Instance.Write(ref state, Convert<short>(value));
+                    Int16Serializer.Instance.Write(ref state, Convert<short>(in value));
                     break;
                 case TypeCode.Int32:
-                    Int32Serializer.Instance.Write(ref state, Convert<int>(value));
+                    Int32Serializer.Instance.Write(ref state, Convert<int>(in value));
                     break;
                 case TypeCode.Int64:
-                    Int64Serializer.Instance.Write(ref state, Convert<long>(value));
+                    Int64Serializer.Instance.Write(ref state, Convert<long>(in value));
                     break;
                 case TypeCode.Byte:
-                    ByteSerializer.Instance.Write(ref state, Convert<byte>(value));
+                    ByteSerializer.Instance.Write(ref state, Convert<byte>(in value));
                     break;
                 case TypeCode.UInt16:
-                    UInt16Serializer.Instance.Write(ref state, Convert<ushort>(value));
+                    UInt16Serializer.Instance.Write(ref state, Convert<ushort>(in value));
                     break;
                 case TypeCode.UInt32:
-                    UInt32Serializer.Instance.Write(ref state, Convert<uint>(value));
+                    UInt32Serializer.Instance.Write(ref state, Convert<uint>(in value));
                     break;
                 case TypeCode.UInt64:
-                    UInt64Serializer.Instance.Write(ref state, Convert<ulong>(value));
+                    UInt64Serializer.Instance.Write(ref state, Convert<ulong>(in value));
                     break;
                 default:
                     throw new InvalidOperationException("Failed to parse this type: " + Type.GetTypeCode(typeof(T)));
@@ -347,7 +355,7 @@ namespace ProtoBuf.Internal.Serializers
             return value;
         }
 
-        private static PRIM_TYPE Convert<PRIM_TYPE>(T var)
+        private static PRIM_TYPE Convert<PRIM_TYPE>(in T var)
         {
             Dictionary<T, PRIM_TYPE> dictionary = (Dictionary<T, PRIM_TYPE>)typeToPrimitives;
             if (!dictionary.TryGetValue(var, out PRIM_TYPE value))

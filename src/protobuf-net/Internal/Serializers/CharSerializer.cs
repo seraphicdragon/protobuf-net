@@ -23,14 +23,14 @@ namespace ProtoBuf.Internal.Serializers
             return (char)state.ReadUInt16();
         }
 
-        public void Write(ref ProtoWriter.State state, char value)
+        public void Write(ref ProtoWriter.State state, in char value)
         {
             state.WriteUInt16(value);
         }
 
-        public char Read(ref ProtoReader.State state, char value)
+        public void Read(ref ProtoReader.State state, ref char value)
         {
-            return (char)state.ReadUInt16();
+            value = (char)state.ReadUInt16();
         }
 
         // no need for any special IL here; ushort and char are

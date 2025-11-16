@@ -37,14 +37,14 @@ namespace ProtoBuf.Internal.Serializers
             ctx.EmitStateBasedRead(nameof(ProtoReader.State.ReadUInt16), typeof(ushort));
         }
 
-        public void Write(ref ProtoWriter.State state, ushort value)
+        public void Write(ref ProtoWriter.State state, in ushort value)
         {
             state.WriteUInt16(value);
         }
 
-        public ushort Read(ref ProtoReader.State state, ushort value)
+        public void Read(ref ProtoReader.State state, ref ushort value)
         {
-            return state.ReadUInt16();
+            value = state.ReadUInt16();
         }
     }
 }

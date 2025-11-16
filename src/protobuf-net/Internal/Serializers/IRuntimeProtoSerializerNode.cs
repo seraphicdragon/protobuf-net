@@ -69,7 +69,7 @@ namespace ProtoBuf.Internal.Serializers
         /// </summary>
         /// <param name="value">The value to be serialized.</param>
         /// <param name="state">Writer state</param>
-        void Write(ref ProtoWriter.State state, T value);
+        void Write(ref ProtoWriter.State state, in T value);
 
         /// <summary>
         /// Perform the steps necessary to deserialize this data.
@@ -77,6 +77,6 @@ namespace ProtoBuf.Internal.Serializers
         /// <param name="value">The current value, if appropriate.</param>
         /// <param name="state">Reader state</param>
         /// <returns>The updated / replacement value.</returns>
-        T Read(ref ProtoReader.State state, T value);
+        void Read(ref ProtoReader.State state, ref T value);
     }
 }

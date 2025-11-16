@@ -73,7 +73,7 @@ namespace ProtoBuf.Internal.Serializers
             }, ExpectedType);
         }
 
-        public void Write(ref ProtoWriter.State state, decimal value)
+        public void Write(ref ProtoWriter.State state, in decimal value)
         {
             switch (_variant)
             {
@@ -86,9 +86,9 @@ namespace ProtoBuf.Internal.Serializers
             }
         }
 
-        public decimal Read(ref ProtoReader.State state, decimal value)
+        public void Read(ref ProtoReader.State state, ref  decimal value)
         {
-            return _variant switch
+            value = _variant switch
             {
                 Variant.String => BclHelpers.ReadDecimalString(ref state),
                 _ => BclHelpers.ReadDecimal(ref state),

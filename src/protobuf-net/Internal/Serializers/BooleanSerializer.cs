@@ -37,14 +37,14 @@ namespace ProtoBuf.Internal.Serializers
             ctx.EmitStateBasedRead(nameof(ProtoReader.State.ReadBoolean), ExpectedType);
         }
 
-        public void Write(ref ProtoWriter.State state, bool value)
+        public void Write(ref ProtoWriter.State state, in bool value)
         {
             state.WriteBoolean(value);
         }
 
-        public bool Read(ref ProtoReader.State state, bool value)
+        public void Read(ref ProtoReader.State state, ref bool value)
         {
-            return state.ReadBoolean();
+            value = state.ReadBoolean();
         }
     }
 }

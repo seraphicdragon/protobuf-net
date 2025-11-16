@@ -202,7 +202,7 @@ namespace ProtoBuf.Internal.Serializers
         void IDirectWriteNode.EmitDirectWrite(int fieldNumber, WireType wireType, CompilerContext ctx, Local valueFrom)
             => SubItemSerializer.EmitWriteMessage<T>(fieldNumber, wireType, ctx, valueFrom, serializerType: MetaType.SerializerType);
 
-        public void Write(ref ProtoWriter.State state, T value)
+        public void Write(ref ProtoWriter.State state, in T value)
         {
             var category = GetCategory();
             switch (category)
@@ -220,19 +220,21 @@ namespace ProtoBuf.Internal.Serializers
             }
         }
 
-        public T Read(ref ProtoReader.State state, T value)
+        public void Read(ref ProtoReader.State state, ref T value)
         {
             var category = GetCategory();
             switch (category)
             {
                 case SerializerFeatures.CategoryMessageWrappedAtRoot:
                 case SerializerFeatures.CategoryMessage:
-                    return state.ReadMessage<T>(default, value, CustomSerializer);
+                    value = state.ReadMessage<T>(default, value, CustomSerializer);
+                    break;
                 case SerializerFeatures.CategoryScalar:
-                    return CustomSerializer.Read(ref state, value);
+                    value = CustomSerializer.Read(ref state, value);
+                    break;
                 default:
                     category.ThrowInvalidCategory();
-                    return default;
+                    break;
             }
         }
     }

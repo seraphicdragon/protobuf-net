@@ -371,7 +371,7 @@ namespace ProtoBuf.Internal.Serializers
                     //Debug.WriteLine(": " + ser.ToString());
                     IRuntimeProtoSerializerNode<T> casted = ser as IRuntimeProtoSerializerNode<T>;
                     if (casted != null)
-                        casted.Write(ref state, value);
+                        casted.Write(ref state, in value);
                     else
                         ser.Write(ref state, value);
                 }
@@ -418,7 +418,7 @@ namespace ProtoBuf.Internal.Serializers
                             IRuntimeProtoSerializerNode<TState> casted = ser as IRuntimeProtoSerializerNode<TState>;
                             if (casted != null)
                             {
-                                bodyState = casted.Read(ref state, bodyState);
+                                casted.Read(ref state, ref bodyState);
                             }
                             else
                                 bodyState = (TState)ser.Read(ref state, bodyState);
@@ -431,14 +431,14 @@ namespace ProtoBuf.Internal.Serializers
                             if (casted != null)
                             {
                                 //ref T boxed = ref value;
-                                T result = casted.Read(ref state, value);
+                                casted.Read(ref state, ref value);
                                 if (ser.ReturnsValue)
                                 {
-                                    setter(ref bodyState, result);
+                                    setter(ref bodyState, value);
                                 }
                                 else if (ExpectedType.IsValueType)
                                 {   // make sure changes to structs are preserved
-                                    setter(ref bodyState, result);
+                                    setter(ref bodyState, value);
                                 }
                             }
                             else
