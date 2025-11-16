@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.Serialization;
 
 namespace ProtoBuf.Internal.Serializers
 {
@@ -165,7 +164,7 @@ namespace ProtoBuf.Internal.Serializers
         }
     }
 
-    internal sealed class FieldDecoractor<T> : FieldDecorator, IRuntimeProtoSerializerNode<T> where T : struct, ICustomDecoratorSerializable
+    internal sealed class FieldDecoractor<T> : FieldDecorator, IRuntimeProtoSerializerNode<T> where T : ICustomDecoratorSerializable
     {
         public FieldDecoractor(ValueMember valueMember, Type forType, FieldInfo field, IRuntimeProtoSerializerNode tail) : base(valueMember, forType, field, tail)
         {

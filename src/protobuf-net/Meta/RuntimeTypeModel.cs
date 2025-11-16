@@ -2188,10 +2188,15 @@ namespace ProtoBuf.Meta
                 }
             }
         }
-        public static void RegisterCustomDecoratorSerializable<T>() where T : struct, ICustomDecoratorSerializable
+        public static void RegisterCustomDecoratorSerializable<T>() where T : ICustomDecoratorSerializable
         {
             FieldDecoractor<T>.CreateType();
         }
+
+        public static void RegisterEnumMemberSerializer<T>() where T : Enum
+        {
+            EnumMemberSerializer<T>.CreateType();
+        }    
 
 
         [MethodImpl(MethodImplOptions.NoInlining)]

@@ -430,8 +430,8 @@ namespace ProtoBuf.Internal.Serializers
                             IRuntimeProtoSerializerNode<T> casted = ser as IRuntimeProtoSerializerNode<T>;
                             if (casted != null)
                             {
-                                T boxed = value;
-                                T result = casted.Read(ref state, boxed);
+                                //ref T boxed = ref value;
+                                T result = casted.Read(ref state, value);
                                 if (ser.ReturnsValue)
                                 {
                                     setter(ref bodyState, result);
