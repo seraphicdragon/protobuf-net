@@ -542,6 +542,9 @@ namespace ProtoBuf.Meta
                     if (_defaultValue is not null && !IsRequired && getSpecified is null)
                     {   // note: "ShouldSerialize*" / "*Specified" / etc ^^^^ take precedence over defaultValue,
                         // as does "IsRequired"
+
+                        //Try to get t he default serializer here...
+
                         ser = new DefaultValueDecorator(this, _defaultValue, ser);
                     }
                     if (MemberType == typeof(Uri))

@@ -34,15 +34,38 @@ namespace ProtoBuf.Internal.Serializers
             if (serializable != null && serializable.TrySerializeMember(ValueMember))
             {
                 TagDecorator tagDecorator = Tail as TagDecorator;
-                
+
 
                 if (tagDecorator != null)
-                    tagDecorator.WriteFieldHeader(ref state);
-                
-
-                if (!serializable.TryWrite(ref state, ValueMember, EndTail))
                 {
-                    throw new InvalidOperationException("Error occurred!");
+                    tagDecorator.WriteFieldHeader(ref state);
+
+
+                    if (!serializable.TryWrite(ref state, ValueMember, EndTail))
+                    {
+                        throw new InvalidOperationException("Error occurred!");
+                    }
+                }
+                else
+                {
+                    DefaultValueDecorator defaultValueDecorator = Tail as DefaultValueDecorator;
+                    if (defaultValueDecorator != null)
+                    {
+                        if (!serializable.IsDefault(ValueMember))
+                        {
+                            TagDecorator defaultTagDecorator = (TagDecorator)defaultValueDecorator.Tail;
+                            defaultTagDecorator.WriteFieldHeader(ref state);
+                            if (!serializable.TryWrite(ref state, ValueMember, EndTail))
+                                throw new InvalidOperationException("Error occurred!");
+                        }
+                        // Tail.Write(ref state, value);
+                    }
+                    else
+                    {
+                        //throw new InvalidOperationException("Failed to parse thie decorator's type: " + Tail.GetType());
+                        value = field.GetValue(value);
+                        if (value is not null) Tail.Write(ref state, value);
+                    }
                 }
             }
             else
@@ -63,11 +86,30 @@ namespace ProtoBuf.Internal.Serializers
                 {
                     if (tagDecorator.IsStrict) { state.Assert(tagDecorator.WireType); }
                     else if (tagDecorator.NeedsHint) { state.Hint(tagDecorator.WireType); }
-                }
 
-                if (!serializable.TryRead(ref state, ValueMember, EndTail))
+
+                    if (!serializable.TryRead(ref state, ValueMember, EndTail))
+                    {
+                        throw new InvalidOperationException("Failed to read");
+                    }
+                }
+                else
                 {
-                    throw new InvalidOperationException("Failed to read");
+                    DefaultValueDecorator defaultValueDecorator = Tail as DefaultValueDecorator;
+                    if (defaultValueDecorator != null)
+                    {
+                        if (!serializable.TryRead(ref state, ValueMember, EndTail))
+                            throw new InvalidOperationException("Error occurred!");
+                        // Tail.Write(ref state, value);
+                    }
+                    else
+                    {
+                        /* throw new InvalidOperationException("Failed to parse thie decorator's type: " + Tail.GetType());*/
+                        Debug.Assert(value is not null);
+                        object newValue = Tail.Read(ref state, Tail.RequiresOldValue ? field.GetValue(value) : null);
+                        if (newValue is not null) field.SetValue(value, newValue);
+                        return null;
+                    }
                 }
                 return serializable;
             }
@@ -166,6 +208,7 @@ namespace ProtoBuf.Internal.Serializers
 
     internal sealed class FieldDecoractor<T> : FieldDecorator, IRuntimeProtoSerializerNode<T> where T : ICustomDecoratorSerializable
     {
+        private static readonly EqualityComparer<T> comparer = EqualityComparer<T>.Default;
         public FieldDecoractor(ValueMember valueMember, Type forType, FieldInfo field, IRuntimeProtoSerializerNode tail) : base(valueMember, forType, field, tail)
         {
         }
@@ -178,12 +221,35 @@ namespace ProtoBuf.Internal.Serializers
 
 
                 if (tagDecorator != null)
+                {
                     tagDecorator.WriteFieldHeader(ref state);
 
 
-                if (!value.TryWrite(ref state, ValueMember, EndTail))
+                    if (!value.TryWrite(ref state, ValueMember, EndTail))
+                    {
+                        throw new InvalidOperationException("Error occurred!");
+                    }
+                }
+                else
                 {
-                    throw new InvalidOperationException("Error occurred!");
+                    DefaultValueDecorator defaultValueDecorator = Tail as DefaultValueDecorator;
+                    if (defaultValueDecorator != null)
+                    {
+                        if (!value.IsDefault(ValueMember))
+                        {
+                            TagDecorator defaultTagDecorator = (TagDecorator)defaultValueDecorator.Tail;
+                            defaultTagDecorator.WriteFieldHeader(ref state);
+                            if (!value.TryWrite(ref state, ValueMember, EndTail))
+                                throw new InvalidOperationException("Error occurred!");
+                        }
+                        // Tail.Write(ref state, value);
+                    }
+                    else
+                    {
+                        /*throw new InvalidOperationException("Failed to parse thie decorator's type: " + Tail.GetType());*/
+                        value = (T)field.GetValue(value);
+                        Tail.Write(ref state, value);
+                    }
                 }
             }
             else
@@ -203,11 +269,29 @@ namespace ProtoBuf.Internal.Serializers
                 {
                     if (tagDecorator.IsStrict) { state.Assert(tagDecorator.WireType); }
                     else if (tagDecorator.NeedsHint) { state.Hint(tagDecorator.WireType); }
-                }
 
-                if (!serializable.TryRead(ref state, ValueMember, EndTail))
+
+                    if (!serializable.TryRead(ref state, ValueMember, EndTail))
+                    {
+                        throw new InvalidOperationException("Failed to read");
+                    }
+                }
+                else
                 {
-                    throw new InvalidOperationException("Failed to read");
+                    DefaultValueDecorator defaultValueDecorator = Tail as DefaultValueDecorator;
+                    if (defaultValueDecorator != null)
+                    {
+                        if (!serializable.TryRead(ref state, ValueMember, EndTail))
+                            throw new InvalidOperationException("Error occurred!");
+                        // Tail.Write(ref state, value);
+                    }
+                    else
+                    {
+                        //throw new InvalidOperationException("Failed to parse thie decorator's type: " + Tail.GetType());
+                        object newValue = Tail.Read(ref state, Tail.RequiresOldValue ? field.GetValue(serializable) : null);
+                        if (newValue is not null) field.SetValue(serializable, newValue);
+                        return (T)newValue;
+                    }
                 }
                 return serializable;
             }

@@ -9,7 +9,7 @@ namespace ProtoBuf.Internal.Serializers
         private readonly ValueMember valueMember;
         public virtual bool IsScalar => Tail.IsScalar;
         public abstract Type ExpectedType { get; }
-        protected readonly IRuntimeProtoSerializerNode Tail;
+        public readonly IRuntimeProtoSerializerNode Tail;
 
         public IRuntimeProtoSerializerNode EndTail
         {
