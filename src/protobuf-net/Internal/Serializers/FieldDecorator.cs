@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.Serialization;
 
 namespace ProtoBuf.Internal.Serializers
 {
@@ -43,7 +44,7 @@ namespace ProtoBuf.Internal.Serializers
 
                     if (!serializable.TryWrite(ref state, ValueMember, EndTail))
                     {
-                        throw new InvalidOperationException("Error occurred!");
+                        throw new InvalidOperationException("FieldDecorator.Write = Failed to write this Field ID: " + ValueMember.FieldNumber + " for this type: " + serializable.GetType());
                     }
                 }
                 else
@@ -56,7 +57,7 @@ namespace ProtoBuf.Internal.Serializers
                             TagDecorator defaultTagDecorator = (TagDecorator)defaultValueDecorator.Tail;
                             defaultTagDecorator.WriteFieldHeader(ref state);
                             if (!serializable.TryWrite(ref state, ValueMember, EndTail))
-                                throw new InvalidOperationException("Error occurred!");
+                                throw new InvalidOperationException("FieldDecorator.Write = Failed to write this Field ID: " + ValueMember.FieldNumber + " for this type: " + serializable.GetType());
                         }
                         // Tail.Write(ref state, value);
                     }
@@ -90,7 +91,7 @@ namespace ProtoBuf.Internal.Serializers
 
                     if (!serializable.TryRead(ref state, ValueMember, EndTail))
                     {
-                        throw new InvalidOperationException("Failed to read");
+                        throw new InvalidOperationException("FieldDecorator.Write = Failed to read this Field ID: " + ValueMember.FieldNumber + " for this type: " + serializable.GetType());
                     }
                 }
                 else
@@ -99,7 +100,7 @@ namespace ProtoBuf.Internal.Serializers
                     if (defaultValueDecorator != null)
                     {
                         if (!serializable.TryRead(ref state, ValueMember, EndTail))
-                            throw new InvalidOperationException("Error occurred!");
+                            throw new InvalidOperationException("FieldDecorator.Read = Failed to read this Field ID: " + ValueMember.FieldNumber + " for this type: " + serializable.GetType());
                         // Tail.Write(ref state, value);
                     }
                     else
@@ -227,7 +228,7 @@ namespace ProtoBuf.Internal.Serializers
 
                     if (!value.TryWrite(ref state, ValueMember, EndTail))
                     {
-                        throw new InvalidOperationException("Error occurred!");
+                        throw new InvalidOperationException("FieldDecorator.Write = Failed to write this Field ID: " + ValueMember.FieldNumber + " for this type: " + value.GetType());
                     }
                 }
                 else
@@ -240,7 +241,7 @@ namespace ProtoBuf.Internal.Serializers
                             TagDecorator defaultTagDecorator = (TagDecorator)defaultValueDecorator.Tail;
                             defaultTagDecorator.WriteFieldHeader(ref state);
                             if (!value.TryWrite(ref state, ValueMember, EndTail))
-                                throw new InvalidOperationException("Error occurred!");
+                                throw new InvalidOperationException("FieldDecorator.Write = Failed to write this Field ID: " + ValueMember.FieldNumber + " for this type: " + value.GetType());
                         }
                         // Tail.Write(ref state, value);
                     }
@@ -273,7 +274,7 @@ namespace ProtoBuf.Internal.Serializers
 
                     if (!serializable.TryRead(ref state, ValueMember, EndTail))
                     {
-                        throw new InvalidOperationException("Failed to read");
+                        throw new InvalidOperationException("FieldDecorator.Write = Failed to read this Field ID: " + ValueMember.FieldNumber + " for this type: " + serializable.GetType());
                     }
                 }
                 else
