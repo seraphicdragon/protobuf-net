@@ -248,8 +248,10 @@ namespace ProtoBuf.Internal.Serializers
                     else
                     {
                         /*throw new InvalidOperationException("Failed to parse thie decorator's type: " + Tail.GetType());*/
-                        value = (T)field.GetValue(value);
-                        Tail.Write(ref state, value);
+                        //value = (T)field.GetValue(value);
+                        //Tail.Write(ref state, value);
+                        if (!value.TryWrite(ref state, ValueMember, Tail))
+                            throw new InvalidOperationException("FieldDecorator.Write = Failed to write this Field ID: " + ValueMember.FieldNumber + " for this type: " + value.GetType());
                     }
                 }
             }
@@ -289,9 +291,10 @@ namespace ProtoBuf.Internal.Serializers
                     else
                     {
                         //throw new InvalidOperationException("Failed to parse thie decorator's type: " + Tail.GetType());
-                        object newValue = Tail.Read(ref state, Tail.RequiresOldValue ? field.GetValue(serializable) : null);
-                        if (newValue is not null) field.SetValue(serializable, newValue);
-                        return (T)newValue;
+                        //  object newValue = Tail.Read(ref state, Tail.RequiresOldValue ? field.GetValue(serializable) : null);
+                        //  if (newValue is not null) field.SetValue(serializable, newValue);
+                        //  return (T)newValue;
+                        serializable.TryRead(ref state, ValueMember, Tail);
                     }
                 }
                 return serializable;
