@@ -13,12 +13,12 @@ namespace ProtoBuf.Serializers
 {
 
     // not quite ready to expose this yes
-    internal static partial class RepeatedSerializers
+    public static partial class RepeatedSerializers
     {
         private static readonly Hashtable s_providers;
 
         private static readonly Hashtable s_methodsPerDeclaringType = new Hashtable(), s_knownTypes = new Hashtable();
-        internal static MemberInfo Resolve(Type declaringType, string methodName, Type[] targs)
+        public static MemberInfo Resolve(Type declaringType, string methodName, Type[] targs)
         {
             targs ??= Type.EmptyTypes;
             var methods = (MethodTuple[])s_methodsPerDeclaringType[declaringType];
@@ -106,13 +106,13 @@ namespace ProtoBuf.Serializers
             Add(typeof(IEnumerable<>), (root, current, targs) => Resolve(typeof(RepeatedSerializer), nameof(RepeatedSerializer.CreateEnumerable), new[] { root, targs[0] }), false);
         }
 
-        public static void Add(Type type, Func<Type, Type, Type[], MemberInfo> implementation, bool exactOnly = true, Hashtable externalProviders = null)
+        public static void Add(Type type, Func<Type, Type, Type[], MemberInfo> implementation, bool exactOnly = true, Hashtable externalProviders = null, bool overridePriorityFlag = false, int overridePriority = -1)
         {
             var providers = (externalProviders == null ? s_providers : externalProviders);
             if (type is null) ThrowHelper.ThrowArgumentNullException(nameof(type));
             lock (providers)
             {
-                var reg = new Registration(s_providers.Count * (externalProviders == null ? 1 : -1) + 1, implementation, exactOnly);
+                var reg = new Registration(overridePriorityFlag ? overridePriority : (s_providers.Count * (externalProviders == null ? 1 : -1) + 1), implementation, exactOnly);
                 providers.Add(type, reg);
             }
             lock (s_knownTypes)

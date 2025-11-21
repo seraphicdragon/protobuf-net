@@ -20,11 +20,25 @@ using System.Threading;
 
 namespace ProtoBuf.Meta
 {
+    internal enum ProfilerType
+    {
+        Unknown,
+        Read,
+        Write,
+    }
+
     /// <summary>
     /// Provides protobuf serialization support for a number of types that can be defined at runtime
     /// </summary>
     public sealed class RuntimeTypeModel : TypeModel
     {
+
+        public static bool IsProfiling = false;
+        public static Action<string> beginProfile;
+        public static Action endProfile;
+
+        private static Dictionary<Type, string> profilerWriteStrings = new Dictionary<Type, string>(512);
+
         /// <summary>
         /// Ensures that RuntimeTypeModel has been initialized, in advance of using methods on <see cref="Serializer"/>.
         /// </summary>
@@ -2289,6 +2303,19 @@ namespace ProtoBuf.Meta
                 RepeatedSerializers.Add(collection, (root, current, targs) => RepeatedSerializers.Resolve(serializerType, "Create", targs),true,_externalProviders);
 
             return this;
+        }
+
+        internal static string GetProfilerString(Type type, ProfilerType write)
+        {
+            switch (write)
+            {
+                case ProfilerType.Write:
+                    if (!profilerWriteStrings.TryGetValue(type, out string str))
+                        profilerWriteStrings.Add(type, str = type.Name + ".Write");
+                    return str;
+                    break;
+            }
+            return null;
         }
     }
 

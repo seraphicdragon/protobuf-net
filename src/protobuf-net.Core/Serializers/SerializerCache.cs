@@ -6,10 +6,10 @@ using System.Runtime.CompilerServices;
 
 namespace ProtoBuf.Serializers
 {
-    internal static class SerializerCache<[DynamicallyAccessedMembers(DynamicAccess.Serializer)] TProvider>
+    public static class SerializerCache<[DynamicallyAccessedMembers(DynamicAccess.Serializer)] TProvider>
              where TProvider : class
     {
-        internal static readonly TProvider InstanceField = (TProvider)Activator.CreateInstance(typeof(TProvider), nonPublic: true);
+        public static readonly TProvider InstanceField = (TProvider)Activator.CreateInstance(typeof(TProvider), nonPublic: true);
         public static ISerializer<T> GetSerializer<[DynamicallyAccessedMembers(DynamicAccess.ContractType)] T>()
             => SerializerCache<TProvider, T>.InstanceField;
     }

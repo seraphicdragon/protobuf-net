@@ -561,10 +561,12 @@ namespace ProtoBuf.Meta
                     else if (member is FieldInfo fld)
                     {
                         if (customizableSerializableType.IsAssignableFrom(MemberType) &&
+                            ParentType.IsValueType &&
                             MemberType.IsValueType)
                         {
+                            RuntimeHelpers.RunClassConstructor(ParentType.TypeHandle);
                             RuntimeHelpers.RunClassConstructor(MemberType.TypeHandle);
-                            ser = FieldDecorator.CreateInstance(MemberType, this, ParentType, fld, ser);
+                            ser = FieldDecorator.CreateInstance(ParentType, this, ParentType, fld, ser);
                         }else if(customizableSerializableType.IsAssignableFrom(ParentType) &&
                             ParentType.IsValueType)
                         {

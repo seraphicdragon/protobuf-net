@@ -32,47 +32,57 @@ namespace ProtoBuf.Internal.Serializers
         {
             Debug.Assert(value is not null);
             ICustomDecoratorSerializable serializable = value as ICustomDecoratorSerializable;
-            if (serializable != null && serializable.TrySerializeMember(ValueMember))
+            if (RuntimeTypeModel.IsProfiling && RuntimeTypeModel.beginProfile != null)
+                RuntimeTypeModel.beginProfile(RuntimeTypeModel.GetProfilerString(value.GetType(), ProfilerType.Write));
+            try
             {
-                TagDecorator tagDecorator = Tail as TagDecorator;
-
-
-                if (tagDecorator != null)
+                if (serializable != null && serializable.TrySerializeMember(ValueMember))
                 {
-                    tagDecorator.WriteFieldHeader(ref state);
+                    TagDecorator tagDecorator = Tail as TagDecorator;
 
 
-                    if (!serializable.TryWrite(ref state, ValueMember, EndTail))
+                    if (tagDecorator != null)
                     {
-                        throw new InvalidOperationException("FieldDecorator.Write = Failed to write this Field ID: " + ValueMember.FieldNumber + " for this type: " + serializable.GetType());
+                        tagDecorator.WriteFieldHeader(ref state);
+
+
+                        if (!serializable.TryWrite(ref state, ValueMember, EndTail))
+                        {
+                            throw new InvalidOperationException("FieldDecorator.Write = Failed to write this Field ID: " + ValueMember.FieldNumber + " for this type: " + serializable.GetType());
+                        }
+                    }
+                    else
+                    {
+                        DefaultValueDecorator defaultValueDecorator = Tail as DefaultValueDecorator;
+                        if (defaultValueDecorator != null)
+                        {
+                            if (!serializable.IsDefault(ValueMember))
+                            {
+                                TagDecorator defaultTagDecorator = (TagDecorator)defaultValueDecorator.Tail;
+                                defaultTagDecorator.WriteFieldHeader(ref state);
+                                if (!serializable.TryWrite(ref state, ValueMember, EndTail))
+                                    throw new InvalidOperationException("FieldDecorator.Write = Failed to write this Field ID: " + ValueMember.FieldNumber + " for this type: " + serializable.GetType());
+                            }
+                            // Tail.Write(ref state, value);
+                        }
+                        else
+                        {
+                            //throw new InvalidOperationException("Failed to parse thie decorator's type: " + Tail.GetType());
+                            value = field.GetValue(value);
+                            if (value is not null) Tail.Write(ref state, value);
+                        }
                     }
                 }
                 else
                 {
-                    DefaultValueDecorator defaultValueDecorator = Tail as DefaultValueDecorator;
-                    if (defaultValueDecorator != null)
-                    {
-                        if (!serializable.IsDefault(ValueMember))
-                        {
-                            TagDecorator defaultTagDecorator = (TagDecorator)defaultValueDecorator.Tail;
-                            defaultTagDecorator.WriteFieldHeader(ref state);
-                            if (!serializable.TryWrite(ref state, ValueMember, EndTail))
-                                throw new InvalidOperationException("FieldDecorator.Write = Failed to write this Field ID: " + ValueMember.FieldNumber + " for this type: " + serializable.GetType());
-                        }
-                        // Tail.Write(ref state, value);
-                    }
-                    else
-                    {
-                        //throw new InvalidOperationException("Failed to parse thie decorator's type: " + Tail.GetType());
-                        value = field.GetValue(value);
-                        if (value is not null) Tail.Write(ref state, value);
-                    }
+                    value = field.GetValue(value);
+                    if (value is not null) Tail.Write(ref state, value);
                 }
             }
-            else
+            finally
             {
-                value = field.GetValue(value);
-                if (value is not null) Tail.Write(ref state, value);
+                if(RuntimeTypeModel.IsProfiling && RuntimeTypeModel.endProfile != null)
+                    RuntimeTypeModel.endProfile();
             }
         }
 

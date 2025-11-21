@@ -419,7 +419,7 @@ namespace ProtoBuf.Serializers
         protected override List<T> Initialize(List<T> values, ISerializationContext context)
             => values ?? new List<T>();
     }
-    class ListSerializer<TList, T> : RepeatedSerializer<TList, T>
+    public class ListSerializer<TList, T> : RepeatedSerializer<TList, T>
         where TList : List<T>
     {
         protected override TList Initialize(TList values, ISerializationContext context)
