@@ -265,6 +265,28 @@ namespace ProtoBuf
 #pragma warning restore CS0618
         }
 
+        protected internal virtual void WriteMessage<[DynamicallyAccessedMembers(DynamicAccess.ContractType)] T, K>(ref State state, T value, K serializer, PrefixStyle style, bool recursionCheck) where K : ISerializer<T>
+        {
+#pragma warning disable CS0618 // StartSubItem/EndSubItem
+            ProtobufProfiler.BeginProfile(typeof(ProtoWriter), ProfilerType.WriteMap);
+            try
+            {
+                ProtobufProfiler.BeginProfile(typeof(ProtoWriter), ProfilerType.OuterStartSubItem);
+                var tok = state.StartSubItem(TypeHelper<T>.IsReferenceType & recursionCheck ? (object)value : null, style);
+                ProtobufProfiler.EndProfiler();
+                // (serializer ?? TypeModel.GetSerializer<T>(model)).Write(ref state, value);
+                // if(EqualityComparer<K>.Default.Equals(serializer, default))
+                //      throw new InvalidOperationException("Failed to find a serializer with this type: ")
+                serializer.Write(ref state, value);
+                state.EndSubItem(tok, style);
+            }
+            finally
+            {
+                ProtobufProfiler.EndProfiler();
+            }
+#pragma warning restore CS0618
+        }
+
         internal virtual void WriteWrappedCollection<TCollection, TItem>(ref State state, SerializerFeatures features, TCollection values, RepeatedSerializer<TCollection, TItem> serializer, ISerializer<TItem> valueSerializer)
         {
 #pragma warning disable CS0618 // StartSubItem/EndSubItem

@@ -32,8 +32,7 @@ namespace ProtoBuf.Internal.Serializers
         {
             Debug.Assert(value is not null);
             ICustomDecoratorSerializable serializable = value as ICustomDecoratorSerializable;
-            if (RuntimeTypeModel.IsProfiling && RuntimeTypeModel.beginProfile != null)
-                RuntimeTypeModel.beginProfile(RuntimeTypeModel.GetProfilerString(value.GetType(), ProfilerType.Write));
+            ProtobufProfiler.BeginProfile(value.GetType(), ProfilerType.Write);
             try
             {
                 if (serializable != null && serializable.TrySerializeMember(ValueMember))
@@ -81,8 +80,7 @@ namespace ProtoBuf.Internal.Serializers
             }
             finally
             {
-                if(RuntimeTypeModel.IsProfiling && RuntimeTypeModel.endProfile != null)
-                    RuntimeTypeModel.endProfile();
+                ProtobufProfiler.EndProfiler();
             }
         }
 
