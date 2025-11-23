@@ -67,15 +67,59 @@ namespace ProtoBuf.Internal.Serializers
                         else
                         {
                             //throw new InvalidOperationException("Failed to parse thie decorator's type: " + Tail.GetType());
-                            value = field.GetValue(value);
-                            if (value is not null) Tail.Write(ref state, value);
+                            bool successfulWrite = false;
+                            ProtobufProfiler.BeginProfile(value.GetType(), ProfilerType.GetField);
+                            try
+                            {
+                                if(!(successfulWrite = serializable.TryWrite(ref state, ValueMember, Tail)))
+                                    value = field.GetValue(value);
+                            }
+                            finally
+                            {
+                                ProtobufProfiler.EndProfiler();
+                            }
+
+                            if (!successfulWrite)
+                            {
+                                ProtobufProfiler.BeginProfile(value.GetType(), ProfilerType.TailWrite);
+                                try
+                                {
+                                    if (value is not null)
+                                        Tail.Write(ref state, value);
+                                }
+                                finally
+                                {
+                                    ProtobufProfiler.EndProfiler();
+                                }
+                            }
                         }
                     }
                 }
                 else
                 {
-                    value = field.GetValue(value);
-                    if (value is not null) Tail.Write(ref state, value);
+                    ProtobufProfiler.BeginProfile(value.GetType(), ProfilerType.GetField);
+                    try
+                    {
+                        value = field.GetValue(value);
+                    }
+                    finally
+                    {
+                        ProtobufProfiler.EndProfiler();
+                    }
+                    if (value is not null)
+                    {
+                        if (ProtobufProfiler.IsProfiling && value.GetType().IsValueType)
+                            ProtobufProfiler.BeginProfile(value.GetType(), ProfilerType.ValueTypeBoxing);
+                        try
+                        {
+                            Tail.Write(ref state, value);
+                        }
+                        finally
+                        {
+                            if (ProtobufProfiler.IsProfiling && value.GetType().IsValueType)
+                                ProtobufProfiler.EndProfiler();
+                        }
+                    }
                 }
             }
             finally

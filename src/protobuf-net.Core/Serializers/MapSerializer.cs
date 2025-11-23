@@ -304,8 +304,15 @@ namespace ProtoBuf.Serializers
                 {/*
                     var iter1 = sortedList.GetEnumerator();
                     Write(ref state, fieldNumber, wireType, ref iter1, pairSerializer);*/
-                    foreach(KeyValuePair<TKey, TValue> pair in sortedList)
+                    /*foreach(KeyValuePair<TKey, TValue> pair in sortedList)
                     {
+                        state.WriteFieldHeader(fieldNumber, wireType);
+                        state.GetWriter().WriteMessage(ref state, pair, pairSerializer, PrefixStyle.Base128, false);
+                    }*/
+                    IList<TKey> keys = sortedList.Keys;
+                    for (int i = 0; i < keys.Count; i++)
+                    {
+                        KeyValuePair<TKey, TValue> pair = new KeyValuePair<TKey, TValue>(keys[i], sortedList[keys[i]]);
                         state.WriteFieldHeader(fieldNumber, wireType);
                         state.GetWriter().WriteMessage(ref state, pair, pairSerializer, PrefixStyle.Base128, false);
                     }

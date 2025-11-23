@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ProtoBuf
 {
@@ -19,6 +16,10 @@ namespace ProtoBuf
         StartSubItem,
         WriteAny,
         OuterStartSubItem,
+        GetField,
+        ValueTypeBoxing,
+        SerializeImpl,
+        TailWrite,
     }
     public static class ProtobufProfiler
     {
@@ -38,7 +39,12 @@ namespace ProtoBuf
 
         private static Dictionary<Type, string> profilerWriteFieldHeader = new Dictionary<Type, string>(512);
 
+        private static Dictionary<Type, string> profilerGetFieldHeader = new Dictionary<Type, string>(512);
 
+        private static Dictionary<Type, string> profilerValueTypeBoxingStrings = new Dictionary<Type, string>(512);
+
+        private static Dictionary<Type, string> profilerSerializeImplStrings = new Dictionary<Type, string>(512);
+        private static Dictionary<Type, string> profilerTailWriteStrings = new Dictionary<Type, string>(512);
         private static string GetProfilerString(Type type, ProfilerType write)
         {
             switch (write)
@@ -73,8 +79,30 @@ namespace ProtoBuf
                     return "WriteAny";
                 case ProfilerType.OuterStartSubItem:
                     return "OuterStartSubItem";
+                case ProfilerType.GetField:
+                    if (!profilerGetFieldHeader.TryGetValue(type, out str))
+                        profilerGetFieldHeader.Add(type, str = type.Name + ".GetField");
+                    return str;
+                case ProfilerType.ValueTypeBoxing:
+                    if (!profilerValueTypeBoxingStrings.TryGetValue(type, out str))
+                        profilerValueTypeBoxingStrings.Add(type, str = type.Name + ".ValueTypeBoxing");
+                    return str;
+                case ProfilerType.SerializeImpl:
+                    if (!profilerSerializeImplStrings.TryGetValue(type, out str))
+                        profilerSerializeImplStrings.Add(type, str = type.Name + ".SerializeImpl");
+                    return str;
+                case ProfilerType.TailWrite:
+                    if (!profilerTailWriteStrings.TryGetValue(type, out str))
+                        profilerTailWriteStrings.Add(type, str = type.Name + ".TailWrite");
+                    return str;
             }
             return null;
+        }
+
+        internal static void BeginProfile(string profileName)
+        {
+            if (ProtobufProfiler.IsProfiling && ProtobufProfiler.beginProfile != null)
+                ProtobufProfiler.beginProfile(profileName);
         }
 
         internal static void BeginProfile(Type type, ProfilerType profilerType)

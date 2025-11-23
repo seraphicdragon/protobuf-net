@@ -352,41 +352,49 @@ namespace ProtoBuf.Internal.Serializers
 
         protected void SerializeImpl(ref ProtoWriter.State state, T value)
         {
-            Callback(ref value, TypeModel.CallbackType.BeforeSerialize, state.Context);
-
-            // write inheritance first
-            if (CanHaveInheritance)
+            ProtobufProfiler.BeginProfile(typeof(T), ProfilerType.SerializeImpl);
+            try
             {
-                IRuntimeProtoSerializerNode next = GetMoreSpecificSerializer(value);
-                if (next is object) next.Write(ref state, value); // This is fine... this is totally a class at this point!!!
-            }
+                Callback(ref value, TypeModel.CallbackType.BeforeSerialize, state.Context);
 
-            // write all actual fields
-            //Debug.WriteLine(">> Writing fields for " + forType.FullName);
-            for (int i = 0; i < serializers.Length; i++)
-            {
-                IRuntimeProtoSerializerNode ser = serializers[i];
-                if (!(ser is IProtoTypeSerializer ts && ts.IsSubType))
+                // write inheritance first
+                if (CanHaveInheritance)
                 {
-                    //Debug.WriteLine(": " + ser.ToString());
-                    IRuntimeProtoSerializerNode<T> casted = ser as IRuntimeProtoSerializerNode<T>;
-                    if (casted != null)
-                        casted.Write(ref state, value);
-                    else
-                        ser.Write(ref state, value);
+                    IRuntimeProtoSerializerNode next = GetMoreSpecificSerializer(value);
+                    if (next is object) next.Write(ref state, value); // This is fine... this is totally a class at this point!!!
                 }
-            }
-            //Debug.WriteLine("<< Writing fields for " + forType.FullName);
 
-            if (UseTypedExtensible)
-            {
-                state.AppendExtensionData((ITypedExtensible)value, ExpectedType);
+                // write all actual fields
+                //Debug.WriteLine(">> Writing fields for " + forType.FullName);
+                for (int i = 0; i < serializers.Length; i++)
+                {
+                    IRuntimeProtoSerializerNode ser = serializers[i];
+                    if (!(ser is IProtoTypeSerializer ts && ts.IsSubType))
+                    {
+                        //Debug.WriteLine(": " + ser.ToString());
+                        IRuntimeProtoSerializerNode<T> casted = ser as IRuntimeProtoSerializerNode<T>;
+                        if (casted != null)
+                            casted.Write(ref state, value);
+                        else
+                            ser.Write(ref state, value);
+                    }
+                }
+                //Debug.WriteLine("<< Writing fields for " + forType.FullName);
+
+                if (UseTypedExtensible)
+                {
+                    state.AppendExtensionData((ITypedExtensible)value, ExpectedType);
+                }
+                else if (GetFlag(StateFlags.IsExtensible))
+                {
+                    state.AppendExtensionData((IExtensible)value);
+                }
+                Callback(ref value, TypeModel.CallbackType.AfterSerialize, state.Context);
             }
-            else if (GetFlag(StateFlags.IsExtensible))
+            finally
             {
-                state.AppendExtensionData((IExtensible)value);
+                ProtobufProfiler.EndProfiler();
             }
-            Callback(ref value, TypeModel.CallbackType.AfterSerialize, state.Context);
         }
 
         protected Action<T, ISerializationContext> _subTypeOnBeforeDeserialize;

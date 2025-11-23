@@ -143,8 +143,9 @@ namespace ProtoBuf.Serializers
                 WriteNullWrapped(ref state, fieldNumber, features, values, serializer);
                 return;
             }
-
+            ProtobufProfiler.BeginProfile("RepeatedSerializer.getSerializer");
             serializer ??= TypeModel.GetSerializer<TItem>(state.Model);
+            ProtobufProfiler.EndProfiler();
             var serializerFeatures = serializer.Features;
             if (serializerFeatures.IsRepeated()) TypeModel.ThrowNestedListsNotSupported(typeof(TItem));
             features.InheritFrom(serializerFeatures);
@@ -214,7 +215,15 @@ namespace ProtoBuf.Serializers
                             writer.WriteMessage<TItem>(ref state, value, serializer, PrefixStyle.Base128, true);
                             break;
                         case SerializerFeatures.CategoryScalar:
-                            serializer.Write(ref state, value);
+                            ProtobufProfiler.BeginProfile("RepeatedSerializer.WriteElement");
+                            try
+                            {
+                                serializer.Write(ref state, value);
+                            }
+                            finally
+                            {
+                                ProtobufProfiler.EndProfiler();
+                            }
                             break;
                         default:
                             category.ThrowInvalidCategory();

@@ -344,9 +344,17 @@ namespace ProtoBuf
         protected internal virtual void WriteSubType<[DynamicallyAccessedMembers(DynamicAccess.ContractType)] T>(ref State state, T value, ISubTypeSerializer<T> serializer) where T : class
         {
 #pragma warning disable CS0618 // StartSubItem/EndSubItem
-            var tok = state.StartSubItem(null, PrefixStyle.Base128);
-            serializer.WriteSubType(ref state, value);
-            state.EndSubItem(tok, PrefixStyle.Base128);
+            ProtobufProfiler.BeginProfile("ProtoWriter.WriteSubType");
+            try
+            {
+                var tok = state.StartSubItem(null, PrefixStyle.Base128);
+                serializer.WriteSubType(ref state, value);
+                state.EndSubItem(tok, PrefixStyle.Base128);
+            }
+            finally
+            {
+                ProtobufProfiler.EndProfiler();
+            }
 #pragma warning restore CS0618
         }
 

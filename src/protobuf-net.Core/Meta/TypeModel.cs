@@ -1486,8 +1486,18 @@ namespace ProtoBuf.Meta
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static ISubTypeSerializer<T> GetSubTypeSerializer<T>(TypeModel model) where T : class
-           => model?.GetSerializer<T>() as ISubTypeSerializer<T>
-            ?? NoSubTypeSerializer<T>(model);
+        {
+            ProtobufProfiler.BeginProfile("TypeModel.GetSubTypeSerializer");
+            try
+            {
+                return model?.GetSerializer<T>() as ISubTypeSerializer<T>
+                ?? NoSubTypeSerializer<T>(model);
+            }
+            finally
+            {
+                ProtobufProfiler.EndProfiler();
+            }
+        }
 
         /// <summary>
         /// Applies a protocol-buffer stream to an existing instance (which may be null).
