@@ -2,14 +2,14 @@ using ProtoBuf.Internal;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+//using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace ProtoBuf.Serializers
 {
-    public static partial class RepeatedSerializer
+    /*public static partial class RepeatedSerializer
     {
         /// <summary>Create a serializer that operates on immutable arrays</summary>
         [MethodImpl(ProtoReader.HotPath)]
@@ -512,5 +512,5 @@ namespace ProtoBuf.Serializers
                 iter?.Dispose();
             }
         }
-    }
+    }*/
 }

@@ -1038,7 +1038,7 @@ namespace ProtoBuf.Meta
             bool demandReadOnly = type.Name.IndexOf("Tuple", StringComparison.OrdinalIgnoreCase) < 0;
             for (int i = 0; i < fieldsPropsUnfiltered.Length; i++)
             {
-                if (fieldsPropsUnfiltered[i] is PropertyInfo prop)
+                /*if (fieldsPropsUnfiltered[i] is PropertyInfo prop)
                 {
                     if (!prop.CanRead) return null; // no use if can't read
                     if (demandReadOnly && prop.CanWrite && IsPublicSetter(Helpers.GetSetMethod(prop, false, false)))
@@ -1059,7 +1059,7 @@ namespace ProtoBuf.Meta
                         return true;
                     }
                 }
-                else
+                else*/
                 {
                     if (fieldsPropsUnfiltered[i] is FieldInfo field)
                     {

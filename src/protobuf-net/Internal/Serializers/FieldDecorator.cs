@@ -9,7 +9,7 @@ using System.Runtime.Serialization;
 
 namespace ProtoBuf.Internal.Serializers
 {
-    internal class FieldDecorator : ProtoDecoratorBase
+    public class FieldDecorator : ProtoDecoratorBase
     {
         protected static readonly Dictionary<Type, ConstructorInfo> fieldDecoratorConstructors = new Dictionary<Type, ConstructorInfo>();
         public override Type ExpectedType { get; }
@@ -259,10 +259,10 @@ namespace ProtoBuf.Internal.Serializers
         }
     }
 
-    internal sealed class FieldDecoractor<T> : FieldDecorator, IRuntimeProtoSerializerNode<T> where T : ICustomDecoratorSerializable
+    public sealed class FieldDecorator<T> : FieldDecorator, IRuntimeProtoSerializerNode<T> where T : ICustomDecoratorSerializable
     {
         private static readonly EqualityComparer<T> comparer = EqualityComparer<T>.Default;
-        public FieldDecoractor(ValueMember valueMember, Type forType, FieldInfo field, IRuntimeProtoSerializerNode tail) : base(valueMember, forType, field, tail)
+        public FieldDecorator(ValueMember valueMember, Type forType, FieldInfo field, IRuntimeProtoSerializerNode tail) : base(valueMember, forType, field, tail)
         {
         }
 
@@ -360,9 +360,11 @@ namespace ProtoBuf.Internal.Serializers
             }
         }
 
-        internal static void CreateType()
+        public static void CreateType()
         { // Get the Type object for the constructed generic type (e.g., GenericClass<int>)
-            Type constructedGenericType = typeof(FieldDecoractor<T>);
+            if (fieldDecoratorConstructors.ContainsKey(typeof(T)))
+                return;
+            Type constructedGenericType = typeof(FieldDecorator<T>);
 
             // Define the parameter types for the desired constructor
             Type[] constructorParameterTypes = new Type[] { typeof(ValueMember), typeof(Type), typeof(FieldInfo), typeof(IRuntimeProtoSerializerNode) };
@@ -381,7 +383,7 @@ namespace ProtoBuf.Internal.Serializers
             }
             else
             {
-                throw new InvalidOperationException("Failed to find a constructor for this type: " +  typeof(FieldDecoractor<T>));
+                throw new InvalidOperationException("Failed to find a constructor for this type: " +  typeof(FieldDecorator<T>));
             }
             fieldDecoratorConstructors.Add(typeof(T), constructor);
         }

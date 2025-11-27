@@ -3,7 +3,7 @@ using System;
 
 namespace ProtoBuf.Internal.Serializers
 {
-    internal abstract class ProtoDecoratorBase : IRuntimeProtoSerializerNode
+    public abstract class ProtoDecoratorBase : IRuntimeProtoSerializerNode
     {
         private IRuntimeProtoSerializerNode endTail = null;
         private readonly ValueMember valueMember;

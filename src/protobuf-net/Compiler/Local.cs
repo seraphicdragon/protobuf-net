@@ -3,7 +3,7 @@ using System.Reflection.Emit;
 
 namespace ProtoBuf.Compiler
 {
-    internal sealed class Local : IDisposable
+    public sealed class Local : IDisposable
     {
         // public static readonly Local InputValue = new Local(null, null);
         private LocalBuilder value;

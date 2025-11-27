@@ -2193,7 +2193,7 @@ namespace ProtoBuf.Meta
         }
         public static void RegisterCustomDecoratorSerializable<T>() where T : ICustomDecoratorSerializable
         {
-            FieldDecoractor<T>.CreateType();
+            FieldDecorator<T>.CreateType();
             //DefaultValueDecorator<T>.CreateType();
         }
 

@@ -4,7 +4,7 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+//using System.Collections.Immutable;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -69,7 +69,7 @@ namespace ProtoBuf.Serializers
                 root == current ? targs : new[] { root, targs[0] }), false);
 
             // note that the immutable APIs can look a lot like the non-immutable ones; need to have them with *higher* priority to ensure they get recognized correctly
-            Add(typeof(ImmutableArray<>), (root, current, targs) => Resolve(typeof(RepeatedSerializer), nameof(RepeatedSerializer.CreateImmutableArray), targs));
+           /* Add(typeof(ImmutableArray<>), (root, current, targs) => Resolve(typeof(RepeatedSerializer), nameof(RepeatedSerializer.CreateImmutableArray), targs));
             Add(typeof(ImmutableDictionary<,>), (root, current, targs) => Resolve(typeof(MapSerializer), nameof(MapSerializer.CreateImmutableDictionary), targs));
             Add(typeof(ImmutableSortedDictionary<,>), (root, current, targs) => Resolve(typeof(MapSerializer), nameof(MapSerializer.CreateImmutableSortedDictionary), targs));
             Add(typeof(IImmutableDictionary<,>), (root, current, targs) => Resolve(typeof(MapSerializer), nameof(MapSerializer.CreateIImmutableDictionary), targs));
@@ -81,7 +81,7 @@ namespace ProtoBuf.Serializers
             Add(typeof(ImmutableQueue<>), (root, current, targs) => Resolve(typeof(RepeatedSerializer), nameof(RepeatedSerializer.CreateImmutableQueue), targs));
             Add(typeof(IImmutableQueue<>), (root, current, targs) => Resolve(typeof(RepeatedSerializer), nameof(RepeatedSerializer.CreateImmutableIQueue), targs));
             Add(typeof(ImmutableStack<>), (root, current, targs) => Resolve(typeof(RepeatedSerializer), nameof(RepeatedSerializer.CreateImmutableStack), targs));
-            Add(typeof(IImmutableStack<>), (root, current, targs) => Resolve(typeof(RepeatedSerializer), nameof(RepeatedSerializer.CreateImmutableIStack), targs));
+            Add(typeof(IImmutableStack<>), (root, current, targs) => Resolve(typeof(RepeatedSerializer), nameof(RepeatedSerializer.CreateImmutableIStack), targs));*/
 
             // the concurrent set
             Add(typeof(ConcurrentDictionary<,>), (root, current, targs) => Resolve(typeof(MapSerializer), nameof(MapSerializer.CreateConcurrentDictionary), new[] { root, targs[0], targs[1] }), false);
