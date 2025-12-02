@@ -441,8 +441,10 @@ namespace ProtoBuf
                 ProtobufProfiler.BeginProfile(typeof(ProtoWriter), ProfilerType.WriteAny);
                 try
                 {
+                    if (ProtobufProfiler.IsDebugging)
+                        ProtobufProfiler.Log(typeof(T), "WriteAny");
                     serializer ??= TypeModel.GetSerializer<T>(Model);
-                    features.InheritFrom(serializer.Features);
+                    features.InheritFrom(serializer.Features); // <--- IL2CPP Bug here!!!
 
                     if (features.HasAny(SerializerFeatures.OptionWrappedValue))
                     {

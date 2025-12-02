@@ -44,10 +44,19 @@ namespace ProtoBuf.Internal.Serializers
                     {
                         tagDecorator.WriteFieldHeader(ref state);
 
-
-                        if (!serializable.TryWrite(ref state, ValueMember, EndTail))
+                        if(ProtobufProfiler.ProfileFieldLevel)
+                            ProtobufProfiler.BeginProfile(field);
+                        try
                         {
-                            throw new InvalidOperationException("FieldDecorator.Write = Failed to write this Field ID: " + ValueMember.FieldNumber + " for this type: " + serializable.GetType());
+                            if (!serializable.TryWrite(ref state, ValueMember, EndTail))
+                            {
+                                throw new InvalidOperationException("FieldDecorator.Write = Failed to write this Field ID: " + ValueMember.FieldNumber + " for this type: " + serializable.GetType());
+                            }
+                        }
+                        finally
+                        {
+                            if (ProtobufProfiler.ProfileFieldLevel)
+                                ProtobufProfiler.EndProfiler();
                         }
                     }
                     else
@@ -59,8 +68,18 @@ namespace ProtoBuf.Internal.Serializers
                             {
                                 TagDecorator defaultTagDecorator = (TagDecorator)defaultValueDecorator.Tail;
                                 defaultTagDecorator.WriteFieldHeader(ref state);
-                                if (!serializable.TryWrite(ref state, ValueMember, EndTail))
+                                if (ProtobufProfiler.ProfileFieldLevel)
+                                    ProtobufProfiler.BeginProfile(field);
+                                try
+                                {
+                                    if (!serializable.TryWrite(ref state, ValueMember, EndTail))
                                     throw new InvalidOperationException("FieldDecorator.Write = Failed to write this Field ID: " + ValueMember.FieldNumber + " for this type: " + serializable.GetType());
+                                }
+                                finally
+                                {
+                                    if (ProtobufProfiler.ProfileFieldLevel)
+                                        ProtobufProfiler.EndProfiler();
+                                }
                             }
                             // Tail.Write(ref state, value);
                         }
@@ -71,8 +90,18 @@ namespace ProtoBuf.Internal.Serializers
                             ProtobufProfiler.BeginProfile(value.GetType(), ProfilerType.GetField);
                             try
                             {
-                                if(!(successfulWrite = serializable.TryWrite(ref state, ValueMember, Tail)))
-                                    value = field.GetValue(value);
+                                if (ProtobufProfiler.ProfileFieldLevel)
+                                    ProtobufProfiler.BeginProfile(field);
+                                try
+                                {
+                                    if (!(successfulWrite = serializable.TryWrite(ref state, ValueMember, Tail)))
+                                        value = field.GetValue(value);
+                                }
+                                finally
+                                {
+                                    if (ProtobufProfiler.ProfileFieldLevel)
+                                        ProtobufProfiler.EndProfiler();
+                                }
                             }
                             finally
                             {
@@ -100,7 +129,17 @@ namespace ProtoBuf.Internal.Serializers
                     ProtobufProfiler.BeginProfile(value.GetType(), ProfilerType.GetField);
                     try
                     {
-                        value = field.GetValue(value);
+                        if (ProtobufProfiler.ProfileFieldLevel)
+                            ProtobufProfiler.BeginProfile(field);
+                        try
+                        {
+                            value = field.GetValue(value);
+                        }
+                        finally
+                        {
+                            if (ProtobufProfiler.ProfileFieldLevel)
+                                ProtobufProfiler.EndProfiler();
+                        }
                     }
                     finally
                     {
