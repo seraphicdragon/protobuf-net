@@ -9,9 +9,14 @@ namespace ProtoBuf.Serializers
     public static class SerializerCache<[DynamicallyAccessedMembers(DynamicAccess.Serializer)] TProvider>
              where TProvider : class
     {
-        public static readonly TProvider InstanceField = (TProvider)Activator.CreateInstance(typeof(TProvider), nonPublic: true);
+        public static TProvider InstanceField = (TProvider)Activator.CreateInstance(typeof(TProvider), nonPublic: true);
         public static ISerializer<T> GetSerializer<[DynamicallyAccessedMembers(DynamicAccess.ContractType)] T>()
             => SerializerCache<TProvider, T>.InstanceField;
+
+        public static void SetInstance(TProvider provider)
+        {
+            InstanceField = provider;
+        }
     }
 
     //internal static class SerializerSingleton<TSerializer, T>
@@ -20,13 +25,20 @@ namespace ProtoBuf.Serializers
     //    public static readonly TSerializer InstanceField = new TSerializer();
     //}
 
-    internal static class SerializerCache<[DynamicallyAccessedMembers(DynamicAccess.Serializer)] TProvider, [DynamicallyAccessedMembers(DynamicAccess.ContractType)] T>
+    public static class SerializerCache<[DynamicallyAccessedMembers(DynamicAccess.Serializer)] TProvider, [DynamicallyAccessedMembers(DynamicAccess.ContractType)] T>
          where TProvider : class
     {
-        internal static readonly ISerializer<T> InstanceField
-            = SerializerCache.Verify(
-                SerializerCache<TProvider>.InstanceField as ISerializer<T>
-                ?? (SerializerCache<TProvider>.InstanceField as ISerializerProxy<T>)?.Serializer);
+        internal static ISerializer<T> InstanceField
+        {
+            get
+            {
+                /*if ((PrimaryTypeProviderInt.Instance as ISerializer<T>) != null)
+                    return PrimaryTypeProviderInt.Instance as ISerializer<T>;*/
+                if (SerializerCache<TProvider>.InstanceField as ISerializer<T> != null)
+                    return SerializerCache<TProvider>.InstanceField as ISerializer<T>;
+                return (SerializerCache<TProvider>.InstanceField as ISerializerProxy<T>)?.Serializer;
+            }
+        }
                 // ?? SerializerCache.TryGetSecondary<ISerializer<T>>(SerializerCache<TProvider>.InstanceField, typeof(TProvider), typeof(T)));
 
         public static ISerializer<T> Instance

@@ -964,7 +964,7 @@ namespace ProtoBuf.Meta
         protected override ISerializer<T> GetSerializer<T>()
             => GetServices<T>(default) as ISerializer<T>;
 
-        internal override ISerializer<T> GetSerializerCore<T>(CompatibilityLevel ambient)
+        public override ISerializer<T> GetSerializerCore<T>(CompatibilityLevel ambient)
             => GetServices<T>(ambient) as ISerializer<T>;
 
         /// <summary>Indicates whether a type is known to the model</summary>

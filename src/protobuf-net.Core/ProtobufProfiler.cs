@@ -145,6 +145,7 @@ namespace ProtoBuf
         private static Dictionary<Type, string> profilerSerializeImplStrings = new Dictionary<Type, string>(512);
         private static Dictionary<Type, string> profilerTailWriteStrings = new Dictionary<Type, string>(512);
         private static Dictionary<FieldInfo, string> profilerFieldInfoStrings = new Dictionary<FieldInfo, string>(512);
+        private static Dictionary<FieldInfo, string> readingProfilerFieldInfoStrings = new Dictionary<FieldInfo, string>(512);
         private static Dictionary<Pair<Type, string>, string> loggings = new Dictionary<Pair<Type,string>, string>(512);
         private static string GetProfilerString(Type type, ProfilerType write)
         {
@@ -211,6 +212,17 @@ namespace ProtoBuf
 
         }
 
+        private static string GetProfilerReadString(FieldInfo fieldInfo)
+        {
+            if (!readingProfilerFieldInfoStrings.TryGetValue(fieldInfo, out string value))
+            {
+                value = fieldInfo.DeclaringType.Name + "." + fieldInfo.Name;
+                readingProfilerFieldInfoStrings[fieldInfo] = value;
+            }
+            return value;
+
+        }
+
         internal static void BeginProfile(string profileName)
         {
             if (ProtobufProfiler.IsProfiling && ProtobufProfiler.beginProfile != null)
@@ -223,10 +235,16 @@ namespace ProtoBuf
                 ProtobufProfiler.beginProfile(ProtobufProfiler.GetProfilerString(type, profilerType));
         }
 
-        internal static void BeginProfile(FieldInfo field)
+        internal static void BeginProfileWrite(FieldInfo field)
         {
             if (ProtobufProfiler.IsProfiling && ProtobufProfiler.beginProfile != null)
                 ProtobufProfiler.beginProfile(ProtobufProfiler.GetProfilerString(field));
+        }
+
+        internal static void BeginProfileRead(FieldInfo field)
+        {
+            if (ProtobufProfiler.IsProfiling && ProtobufProfiler.beginProfile != null)
+                ProtobufProfiler.beginProfile(ProtobufProfiler.GetProfilerReadString(field));
         }
 
         internal static void EndProfiler()
@@ -241,7 +259,7 @@ namespace ProtoBuf
             {
                 Pair<Type, string> pair = new Pair<Type, string>(type, log);
                 if (!loggings.TryGetValue(pair, out string value))
-                    loggings.Add(pair, value = (type.Name + log));
+                    loggings.Add(pair, value = (type.FullName + "." + log));
                 loggingAction(value);
             }
             

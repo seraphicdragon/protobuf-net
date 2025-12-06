@@ -4,38 +4,7 @@ using ProtoBuf.WellKnownTypes;
 using System;
 using System.Runtime.InteropServices;
 
-namespace ProtoBuf.Internal
-{
-    partial class PrimaryTypeProvider : ISerializer<Timestamp>, ISerializer<Timestamp?>
-    {
-        SerializerFeatures ISerializer<Timestamp>.Features => SerializerFeatures.WireTypeString | SerializerFeatures.CategoryMessage;
-        SerializerFeatures ISerializer<Timestamp?>.Features => SerializerFeatures.WireTypeString | SerializerFeatures.CategoryMessage;
-        Timestamp ISerializer<Timestamp>.Read(ref ProtoReader.State state, Timestamp value)
-        {
-            var duration = new Duration(value.Seconds, value.Nanoseconds);
-            duration = ReadDuration(ref state, duration);
-            return new Timestamp(duration.Seconds, duration.Nanoseconds);
-        }
 
-        internal static Timestamp ReadTimestamp(ref ProtoReader.State state, Timestamp value)
-        {
-            var duration = new Duration(value.Seconds, value.Nanoseconds);
-            duration = ReadDuration(ref state, duration);
-            return new Timestamp(duration.Seconds, duration.Nanoseconds);
-        }
-
-        void ISerializer<Timestamp>.Write(ref ProtoWriter.State state, Timestamp value)
-            => WriteSecondsNanos(ref state, value.Seconds, value.Nanoseconds, true);
-
-        internal static void WriteTimestamp(ref ProtoWriter.State state, Timestamp value)
-            => WriteSecondsNanos(ref state, value.Seconds, value.Nanoseconds, true);
-
-        Timestamp? ISerializer<Timestamp?>.Read(ref ProtoReader.State state, Timestamp? value)
-            => ((ISerializer<Timestamp>)this).Read(ref state, value.GetValueOrDefault());
-        void ISerializer<Timestamp?>.Write(ref ProtoWriter.State state, Timestamp? value)
-            => ((ISerializer<Timestamp>)this).Write(ref state, value.Value);
-    }
-}
 namespace ProtoBuf.WellKnownTypes
 {
     /// <summary>

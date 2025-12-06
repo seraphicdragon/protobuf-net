@@ -12,7 +12,7 @@ namespace ProtoBuf
 {
     public partial class ProtoWriter
     {
-        partial struct State
+        public partial struct State
         {
             /// <summary>
             /// Create a new ProtoWriter that targets a buffer writer

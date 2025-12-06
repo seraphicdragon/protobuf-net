@@ -172,7 +172,8 @@ namespace ProtoBuf.Internal
         public static readonly bool CanBeNull = default(T) is null;
 
         public static readonly IValueChecker<T> ValueChecker =
-            SerializerCache<PrimaryTypeProvider>.InstanceField as IValueChecker<T>
+            /*PrimaryTypeProviderInt.Instance as IValueChecker<T> 
+            ?? */SerializerCache<PrimaryTypeProvider>.InstanceField as IValueChecker<T>
             ?? ReferenceValueChecker.Instance as IValueChecker<T>
             ?? (IValueChecker<T>)TypeHelper.GetValueTypeChecker(typeof(T));
 

@@ -289,7 +289,7 @@ namespace ProtoBuf
                 }
             }
 
-            internal ReadBuffer<T> FillBuffer<TSerializer, T>(SerializerFeatures features, in TSerializer serializer, T initialValue)
+            public ReadBuffer<T> FillBuffer<TSerializer, T>(SerializerFeatures features, in TSerializer serializer, T initialValue)
                 where TSerializer : ISerializer<T>
             {
                 PrepareToReadRepeated<T>(ref features, serializer.Features, out var category, out var packed);

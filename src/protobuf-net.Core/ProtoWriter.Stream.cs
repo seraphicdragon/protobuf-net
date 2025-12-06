@@ -20,7 +20,7 @@ namespace ProtoBuf
         public static ProtoWriter Create(Stream dest, TypeModel model, SerializationContext context = null)
             => StreamProtoWriter.CreateStreamProtoWriter(dest, model, context);
 
-        partial struct State
+        public partial struct State
         {
             /// <summary>
             /// Creates a new writer against a stream
@@ -44,7 +44,7 @@ namespace ProtoBuf
 
             private protected override bool ImplDemandFlushOnDispose => true;
 
-            private StreamProtoWriter() { }
+            public StreamProtoWriter() { }
             internal static StreamProtoWriter CreateStreamProtoWriter(Stream dest, TypeModel model, object userState)
             {
                 var obj = Pool<StreamProtoWriter>.TryGet() ?? new StreamProtoWriter();

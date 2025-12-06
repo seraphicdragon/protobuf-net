@@ -45,7 +45,7 @@ namespace ProtoBuf.Internal.Serializers
                         tagDecorator.WriteFieldHeader(ref state);
 
                         if(ProtobufProfiler.ProfileFieldLevel)
-                            ProtobufProfiler.BeginProfile(field);
+                            ProtobufProfiler.BeginProfileWrite(field);
                         try
                         {
                             if (!serializable.TryWrite(ref state, ValueMember, EndTail))
@@ -69,7 +69,7 @@ namespace ProtoBuf.Internal.Serializers
                                 TagDecorator defaultTagDecorator = (TagDecorator)defaultValueDecorator.Tail;
                                 defaultTagDecorator.WriteFieldHeader(ref state);
                                 if (ProtobufProfiler.ProfileFieldLevel)
-                                    ProtobufProfiler.BeginProfile(field);
+                                    ProtobufProfiler.BeginProfileWrite(field);
                                 try
                                 {
                                     if (!serializable.TryWrite(ref state, ValueMember, EndTail))
@@ -91,7 +91,7 @@ namespace ProtoBuf.Internal.Serializers
                             try
                             {
                                 if (ProtobufProfiler.ProfileFieldLevel)
-                                    ProtobufProfiler.BeginProfile(field);
+                                    ProtobufProfiler.BeginProfileWrite(field);
                                 try
                                 {
                                     if (!(successfulWrite = serializable.TryWrite(ref state, ValueMember, Tail)))
@@ -130,7 +130,7 @@ namespace ProtoBuf.Internal.Serializers
                     try
                     {
                         if (ProtobufProfiler.ProfileFieldLevel)
-                            ProtobufProfiler.BeginProfile(field);
+                            ProtobufProfiler.BeginProfileWrite(field);
                         try
                         {
                             value = field.GetValue(value);
@@ -179,10 +179,19 @@ namespace ProtoBuf.Internal.Serializers
                     if (tagDecorator.IsStrict) { state.Assert(tagDecorator.WireType); }
                     else if (tagDecorator.NeedsHint) { state.Hint(tagDecorator.WireType); }
 
-
-                    if (!serializable.TryRead(ref state, ValueMember, EndTail))
+                    if (ProtobufProfiler.ProfileFieldLevel)
+                        ProtobufProfiler.BeginProfileRead(field);
+                    try
                     {
-                        throw new InvalidOperationException("FieldDecorator.Write = Failed to read this Field ID: " + ValueMember.FieldNumber + " for this type: " + serializable.GetType());
+                        if (!serializable.TryRead(ref state, ValueMember, EndTail))
+                        {
+                            throw new InvalidOperationException("FieldDecorator.Write = Failed to read this Field ID: " + ValueMember.FieldNumber + " for this type: " + serializable.GetType());
+                        }
+                    }
+                    finally
+                    {
+                        if (ProtobufProfiler.ProfileFieldLevel)
+                            ProtobufProfiler.EndProfiler();
                     }
                 }
                 else
@@ -190,17 +199,37 @@ namespace ProtoBuf.Internal.Serializers
                     DefaultValueDecorator defaultValueDecorator = Tail as DefaultValueDecorator;
                     if (defaultValueDecorator != null)
                     {
-                        if (!serializable.TryRead(ref state, ValueMember, EndTail))
-                            throw new InvalidOperationException("FieldDecorator.Read = Failed to read this Field ID: " + ValueMember.FieldNumber + " for this type: " + serializable.GetType());
+                        if (ProtobufProfiler.ProfileFieldLevel)
+                            ProtobufProfiler.BeginProfileRead(field);
+                        try
+                        {
+                            if (!serializable.TryRead(ref state, ValueMember, EndTail))
+                                throw new InvalidOperationException("FieldDecorator.Read = Failed to read this Field ID: " + ValueMember.FieldNumber + " for this type: " + serializable.GetType());
+                        }
+                        finally
+                        {
+                            if (ProtobufProfiler.ProfileFieldLevel)
+                                ProtobufProfiler.EndProfiler();
+                        }
                         // Tail.Write(ref state, value);
                     }
                     else
                     {
                         /* throw new InvalidOperationException("Failed to parse thie decorator's type: " + Tail.GetType());*/
-                        Debug.Assert(value is not null);
-                        object newValue = Tail.Read(ref state, Tail.RequiresOldValue ? field.GetValue(value) : null);
-                        if (newValue is not null) field.SetValue(value, newValue);
-                        return null;
+                        if (ProtobufProfiler.ProfileFieldLevel)
+                            ProtobufProfiler.BeginProfileRead(field);
+                        try
+                        {
+                            Debug.Assert(value is not null);
+                            object newValue = Tail.Read(ref state, Tail.RequiresOldValue ? field.GetValue(value) : null);
+                            if (newValue is not null) field.SetValue(value, newValue);
+                            return null;
+                        }
+                        finally
+                        {
+                            if (ProtobufProfiler.ProfileFieldLevel)
+                                ProtobufProfiler.EndProfiler();
+                        }
                     }
                 }
                 return serializable;
@@ -364,10 +393,19 @@ namespace ProtoBuf.Internal.Serializers
                     if (tagDecorator.IsStrict) { state.Assert(tagDecorator.WireType); }
                     else if (tagDecorator.NeedsHint) { state.Hint(tagDecorator.WireType); }
 
-
-                    if (!serializable.TryRead(ref state, ValueMember, EndTail))
+                    if (ProtobufProfiler.ProfileFieldLevel)
+                        ProtobufProfiler.BeginProfileRead(field);
+                    try
                     {
-                        throw new InvalidOperationException("FieldDecorator.Write = Failed to read this Field ID: " + ValueMember.FieldNumber + " for this type: " + serializable.GetType());
+                        if (!serializable.TryRead(ref state, ValueMember, EndTail))
+                        {
+                            throw new InvalidOperationException("FieldDecorator.Write = Failed to read this Field ID: " + ValueMember.FieldNumber + " for this type: " + serializable.GetType());
+                        }
+                    }
+                    finally
+                    {
+                        if (ProtobufProfiler.ProfileFieldLevel)
+                            ProtobufProfiler.EndProfiler();
                     }
                 }
                 else
@@ -375,8 +413,18 @@ namespace ProtoBuf.Internal.Serializers
                     DefaultValueDecorator defaultValueDecorator = Tail as DefaultValueDecorator;
                     if (defaultValueDecorator != null)
                     {
-                        if (!serializable.TryRead(ref state, ValueMember, EndTail))
-                            throw new InvalidOperationException("Error occurred!");
+                        if (ProtobufProfiler.ProfileFieldLevel)
+                            ProtobufProfiler.BeginProfileRead(field);
+                        try
+                        {
+                            if (!serializable.TryRead(ref state, ValueMember, EndTail))
+                                throw new InvalidOperationException("Error occurred!");
+                        }
+                        finally
+                        {
+                            if (ProtobufProfiler.ProfileFieldLevel)
+                                ProtobufProfiler.EndProfiler();
+                        }
                         // Tail.Write(ref state, value);
                     }
                     else
@@ -385,17 +433,37 @@ namespace ProtoBuf.Internal.Serializers
                         //  object newValue = Tail.Read(ref state, Tail.RequiresOldValue ? field.GetValue(serializable) : null);
                         //  if (newValue is not null) field.SetValue(serializable, newValue);
                         //  return (T)newValue;
-                        serializable.TryRead(ref state, ValueMember, Tail);
+                        if (ProtobufProfiler.ProfileFieldLevel)
+                            ProtobufProfiler.BeginProfileRead(field);
+                        try
+                        {
+                            serializable.TryRead(ref state, ValueMember, Tail);
+                        }
+                        finally
+                        {
+                            if (ProtobufProfiler.ProfileFieldLevel)
+                                ProtobufProfiler.EndProfiler();
+                        }
                     }
                 }
                 return serializable;
             }
             else
             {
+                if (ProtobufProfiler.ProfileFieldLevel)
+                    ProtobufProfiler.BeginProfileRead(field);
+                try
+                {
 
-                object newValue = Tail.Read(ref state, Tail.RequiresOldValue ? field.GetValue(serializable) : null);
-                if (newValue is not null) field.SetValue(serializable, newValue);
-                return (T)newValue;
+                    object newValue = Tail.Read(ref state, Tail.RequiresOldValue ? field.GetValue(serializable) : null);
+                    if (newValue is not null) field.SetValue(serializable, newValue);
+                    return (T)newValue;
+                }
+                finally
+                {
+                    if (ProtobufProfiler.ProfileFieldLevel)
+                        ProtobufProfiler.EndProfiler();
+                }
             }
         }
 

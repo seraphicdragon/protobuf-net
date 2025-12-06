@@ -555,7 +555,7 @@ namespace ProtoBuf.Serializers
         }
     }
 
-    sealed class VectorSerializer<T> : RepeatedSerializer<T[], T>
+    public sealed class VectorSerializer<T> : RepeatedSerializer<T[], T>
     {
         protected override T[] Initialize(T[] values, ISerializationContext context)
             => values ?? Array.Empty<T>();

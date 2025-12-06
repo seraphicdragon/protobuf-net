@@ -142,7 +142,7 @@ namespace ProtoBuf.Serializers
         public static SerializerFeatures AsFeatures(this WireType wireType)
             => wireType == WireType.None ? default : (((SerializerFeatures)wireType & WireTypeMask) | SerializerFeatures.WireTypeSpecified);
 
-        const SerializerFeatures CategoryMask = SerializerFeatures.CategoryMessage | SerializerFeatures.CategoryScalar;
+        public const SerializerFeatures CategoryMask = SerializerFeatures.CategoryMessage | SerializerFeatures.CategoryScalar;
 
         [MethodImpl(ProtoReader.HotPath)]
         public static SerializerFeatures GetCategory(this SerializerFeatures features)
@@ -203,7 +203,7 @@ namespace ProtoBuf.Serializers
             => features.HasAny(SerializerFeatures.OptionWrappedValue) ? default(T) : TypeHelper<T>.Default;
 
         // core wire-type bits plus the zig-zag marker; first 4 bits
-        private const SerializerFeatures WireTypeMask = (SerializerFeatures)15;
+        public const SerializerFeatures WireTypeMask = (SerializerFeatures)15;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void ThrowWireTypeNotSpecified() => ThrowHelper.ThrowInvalidOperationException(

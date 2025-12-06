@@ -11,7 +11,7 @@ namespace ProtoBuf
 {
     partial class ProtoWriter
     {
-        ref partial struct State
+        public ref partial struct State
         {
             /// <summary>
             /// Writes a string to the stream
@@ -443,10 +443,54 @@ namespace ProtoBuf
                 {
                     if (ProtobufProfiler.IsDebugging)
                         ProtobufProfiler.Log(typeof(T), "WriteAny");
-                    serializer ??= TypeModel.GetSerializer<T>(Model);
-                    features.InheritFrom(serializer.Features); // <--- IL2CPP Bug here!!!
 
-                    if (features.HasAny(SerializerFeatures.OptionWrappedValue))
+                    /*if (typeof(T) == typeof(int))
+                    {
+                        if(serializer != null && !ReferenceEquals(serializer, PrimaryTypeProviderInt.Instance))
+                            ProtobufProfiler.Log(typeof(T), "Int type mismatch!");
+                        if (ProtobufProfiler.IsDebugging)
+                            ProtobufProfiler.Log(typeof(T), "Using PrimaryTypeProviderInt");
+                        serializer = (ISerializer<T>)PrimaryTypeProviderInt.Instance;
+                    }
+                    else*/ if (serializer == null)
+                    {
+                        serializer = TypeModel.GetSerializer<T>(Model);
+                    }
+
+
+                    if (serializer == null)
+                        throw new NullReferenceException("The serializer was null!!!");
+
+
+                    if (serializer.GetType() == null)
+                        throw new NullReferenceException("The type was null!");
+
+                    bool skippedWrapped = false;
+                    if (typeof(int) == typeof(T))
+                    {
+                        //Gotta correct the IL2CPP bugs... no idea why it's happening...
+                        SerializerFeatures overrides = SerializerFeatures.WireTypeVarint | SerializerFeatures.CategoryScalar;
+                        //if ((features & SerializerFeaturesExtensions.CategoryMask) == 0)
+                            features |= overrides & SerializerFeaturesExtensions.CategoryMask;
+
+                       // if ((features & SerializerFeatures.WireTypeSpecified) == 0)
+                            features |= overrides & (SerializerFeaturesExtensions.WireTypeMask | SerializerFeatures.WireTypeSpecified);
+
+                        if (ProtobufProfiler.IsDebugging)
+                            ProtobufProfiler.Log(serializer.GetType(), "Updating to int features");
+                        skippedWrapped = true;
+                        WriteFieldHeader(fieldNumber, WireType.Varint);
+                        serializer.Write(ref this, value);
+                        return;
+                    }
+                    else
+                    {
+                        if (ProtobufProfiler.IsDebugging)
+                            ProtobufProfiler.Log(serializer.GetType(), "Features");
+                        features.InheritFrom(serializer.Features); // <--- IL2CPP Bug here!!!
+                    }
+
+                    if (!skippedWrapped && features.HasAny(SerializerFeatures.OptionWrappedValue))
                     {
                         WriteWrapped<T>(fieldNumber, features, value, serializer);
                         return;

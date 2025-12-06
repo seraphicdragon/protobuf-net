@@ -7,15 +7,35 @@ using System.Runtime.InteropServices;
 namespace ProtoBuf.Internal
 {
     [StructLayout(LayoutKind.Auto)]
-    internal readonly struct KeyValuePairSerializer<TKey, TValue> : ISerializer<KeyValuePair<TKey, TValue>>
+    public readonly struct KeyValuePairSerializer<TKey, TValue> : ISerializer<KeyValuePair<TKey, TValue>>
     {
         public SerializerFeatures Features => SerializerFeatures.WireTypeString | SerializerFeatures.CategoryMessage;
 
-        internal KeyValuePairSerializer(
+        public KeyValuePairSerializer(
             ISerializer<TKey> keySerializer, SerializerFeatures keyFeatures,
             ISerializer<TValue> valueSerializer, SerializerFeatures valueFeatures)
         {
+            /*if(typeof(TKey) == typeof(int) && 
+                !ReferenceEquals(keySerializer, PrimaryTypeProviderInt.Instance))
+            {
+                if (ProtobufProfiler.IsDebugging)
+                    ProtobufProfiler.Log(typeof(TKey), "Mismatch occurred in KeyValuePairSerializer.ctor");
+                keySerializer = PrimaryTypeProviderInt.Instance as ISerializer<TKey>;
+                if (ReferenceEquals(keySerializer, null))
+                    throw new NullReferenceException("Failed to cast key serializer to Int provider");
+            }*/
             _keySerializer = keySerializer;
+
+            /*if (typeof(TValue) == typeof(int) &&
+                !ReferenceEquals(valueSerializer, PrimaryTypeProviderInt.Instance))
+            {
+                if (ProtobufProfiler.IsDebugging)
+                    ProtobufProfiler.Log(typeof(TValue), "Mismatch occurred in KeyValuePairSerializer.ctor");
+                valueSerializer = PrimaryTypeProviderInt.Instance as ISerializer<TValue>;
+                if (ReferenceEquals(valueSerializer, null))
+                    throw new NullReferenceException("Failed to cast value serializer to Int provider");
+            }*/
+
             _valueSerializer = valueSerializer;
             _keyFeatures = keyFeatures;
             _valueFeatures = valueFeatures;
@@ -25,7 +45,7 @@ namespace ProtoBuf.Internal
         private readonly ISerializer<TValue> _valueSerializer;
         private readonly SerializerFeatures _keyFeatures, _valueFeatures;
 
-        public KeyValuePair<TKey, TValue> Read(ref ProtoReader.State state, KeyValuePair<TKey, TValue> pair)
+        public readonly KeyValuePair<TKey, TValue> Read(ref ProtoReader.State state, KeyValuePair<TKey, TValue> pair)
         {
             TKey key = pair.Key;
             TValue value = pair.Value;
@@ -77,7 +97,7 @@ namespace ProtoBuf.Internal
             return TypeModel.CreateInstance<T>(context, serializer);
         }
 
-        public void Write(ref ProtoWriter.State state, KeyValuePair<TKey, TValue> value)
+        public readonly void Write(ref ProtoWriter.State state, KeyValuePair<TKey, TValue> value)
         {
             // this deals with nulls and implicit zeros
             if (TypeHelper<TKey>.ValueChecker.HasNonTrivialValue(value.Key))

@@ -54,11 +54,35 @@ namespace ProtoBuf.Serializers
         TCollection IRepeatedSerializer<TCollection>.ReadRepeated(ref ProtoReader.State state, SerializerFeatures features, TCollection values)
             => ReadMap(ref state, features, values, default, default, default, default);
 
-        static KeyValuePairSerializer<TKey, TValue> GetSerializer(
+        public static KeyValuePairSerializer<TKey, TValue> GetSerializer(
             TypeModel model, SerializerFeatures keyFeatures, SerializerFeatures valueFeatures, ISerializer<TKey> keySerializer, ISerializer<TValue> valueSerializer)
         {
             keySerializer ??= TypeModel.GetSerializer<TKey>(model);
             valueSerializer ??= TypeModel.GetSerializer<TValue>(model);
+
+            /*if(typeof(TKey) == typeof(int))
+            {
+                if(keySerializer != null && !ReferenceEquals(keySerializer, PrimaryTypeProviderInt.Instance))
+                {
+                    if (ProtobufProfiler.IsDebugging)
+                        ProtobufProfiler.Log(typeof(TKey), "Mismatch Key Serializer");
+                    keySerializer = PrimaryTypeProviderInt.Instance as ISerializer<TKey>;
+                    if (!ReferenceEquals(keySerializer, PrimaryTypeProviderInt.Instance))
+                        throw new InvalidCastException("Failed to cast the int serializer to the corrected form.");
+                }
+            }*/
+
+            /*if (typeof(TValue) == typeof(int))
+            {
+                if (valueSerializer != null && !ReferenceEquals(valueSerializer, PrimaryTypeProviderInt.Instance))
+                {
+                    if (ProtobufProfiler.IsDebugging)
+                        ProtobufProfiler.Log(typeof(TValue), "Mismatch Value Serializer");
+                    valueSerializer = PrimaryTypeProviderInt.Instance as ISerializer<TValue>;
+                    if (!ReferenceEquals(valueSerializer, PrimaryTypeProviderInt.Instance))
+                        throw new InvalidCastException("Failed to cast the int serializer to the corrected form.");
+                }
+            }*/
 
             keyFeatures.InheritFrom(keySerializer.Features);
             valueFeatures.InheritFrom(valueSerializer.Features);

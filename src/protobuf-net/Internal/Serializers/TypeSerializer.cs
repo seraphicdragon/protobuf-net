@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.ConstrainedExecution;
 using System.Runtime.Serialization;
 
 namespace ProtoBuf.Internal.Serializers
@@ -123,7 +124,10 @@ namespace ProtoBuf.Internal.Serializers
             value ??= (T)CreateInstance(state.Context);
 
             Callback(ref value, TypeModel.CallbackType.BeforeDeserialize, state.Context);
-            DeserializeBody(ref state, ref value, (ref T o) => o, (ref T o, T v) => o = v);
+            if (!ExpectedType.IsValueType)
+                DeserializeBody(ref state, ref value, (ref T o) => o, (ref T o, T v) => o = v);
+            else
+                DeserializeBody(ref state, ref value);
             Callback(ref value, TypeModel.CallbackType.AfterDeserialize, state.Context);
             return value;
         }
@@ -405,6 +409,10 @@ namespace ProtoBuf.Internal.Serializers
             int fieldNumber, lastFieldNumber = 0, lastFieldIndex = 0;
             bool fieldHandled;
 
+            if (ProtobufProfiler.IsDebugging)
+            {
+                ProtobufProfiler.Log(typeof(TState), "Deserializing Body");
+            }
             //Debug.WriteLine(">> Reading fields for " + forType.FullName);
             while ((fieldNumber = state.ReadFieldHeader()) > 0)
             {
@@ -431,7 +439,7 @@ namespace ProtoBuf.Internal.Serializers
                             else
                                 bodyState = (TState)ser.Read(ref state, bodyState);
                         }
-                        else
+                        else if(!ExpectedType.IsValueType || ser.ReturnsValue)
                         {
                             var value = getter(ref bodyState);
 
@@ -464,8 +472,27 @@ namespace ProtoBuf.Internal.Serializers
                                 }
                             }
                         }
+                        else
+                        {
+                            TState value = bodyState;
 
-                        lastFieldIndex = i;
+                            IRuntimeProtoSerializerNode<TState> casted = ser as IRuntimeProtoSerializerNode<TState>;
+                            if (casted != null)
+                            {
+                                //ref T boxed = ref value;
+                                TState result = casted.Read(ref state, value);
+                                bodyState = result;
+                            }
+                            else
+                            {
+
+                                object boxed = value;
+                                object result = ser.Read(ref state, boxed);
+                                bodyState = (TState)result;
+                            }
+                        }
+
+                            lastFieldIndex = i;
                         lastFieldNumber = fieldNumber;
                         fieldHandled = true;
                         break;
@@ -482,6 +509,88 @@ namespace ProtoBuf.Internal.Serializers
                     else if (GetFlag(StateFlags.IsExtensible))
                     {
                         var val = getter(ref bodyState);
+                        state.AppendExtensionData((IExtensible)val);
+                    }
+                    else
+                    {
+                        state.SkipField();
+                    }
+                }
+            }
+        }
+
+        protected void DeserializeBody<TState>(ref ProtoReader.State state, ref TState bodyState)  //I don't know why, but IL2CPP likes this one for value types.
+        {
+            int fieldNumber, lastFieldNumber = 0, lastFieldIndex = 0;
+            bool fieldHandled;
+
+            if (ProtobufProfiler.IsDebugging)
+            {
+                ProtobufProfiler.Log(typeof(TState), "Deserializing Body");
+            }
+            //Debug.WriteLine(">> Reading fields for " + forType.FullName);
+            while ((fieldNumber = state.ReadFieldHeader()) > 0)
+            {
+                fieldHandled = false;
+                if (fieldNumber < lastFieldNumber)
+                {
+                    lastFieldNumber = lastFieldIndex = 0;
+                }
+                for (int i = lastFieldIndex; i < fieldNumbers.Length; i++)
+                {
+                    if (fieldNumbers[i] == fieldNumber)
+                    {
+                        IRuntimeProtoSerializerNode ser = serializers[i];
+                        //Debug.WriteLine(": " + ser.ToString());
+                        if (ser is IProtoTypeSerializer ts && ts.IsSubType)
+                        {
+                            // sub-types are implemented differently; pass the entire
+                            // state through and unbox again to observe any changes
+                            IRuntimeProtoSerializerNode<TState> casted = ser as IRuntimeProtoSerializerNode<TState>;
+                            if (casted != null)
+                            {
+                                bodyState = casted.Read(ref state, bodyState);
+                            }
+                            else
+                                bodyState = (TState)ser.Read(ref state, bodyState);
+                        }
+                        else
+                        {
+                            TState value = bodyState;
+
+                            IRuntimeProtoSerializerNode<TState> casted = ser as IRuntimeProtoSerializerNode<TState>;
+                            if (casted != null)
+                            {
+                                //ref T boxed = ref value;
+                                TState result = casted.Read(ref state, value);
+                                bodyState = result;
+                            }
+                            else
+                            {
+
+                                object boxed = value;
+                                object result = ser.Read(ref state, boxed);
+                                bodyState = (TState)result;
+                            }
+                        }
+
+                        lastFieldIndex = i;
+                        lastFieldNumber = fieldNumber;
+                        fieldHandled = true;
+                        break;
+                    }
+                }
+                if (!fieldHandled)
+                {
+                    //Debug.WriteLine(": [" + fieldNumber + "] (unknown)");
+                    if (UseTypedExtensible)
+                    {
+                        var val = bodyState;
+                        state.AppendExtensionData((ITypedExtensible)val, ExpectedType);
+                    }
+                    else if (GetFlag(StateFlags.IsExtensible))
+                    {
+                        var val = bodyState;
                         state.AppendExtensionData((IExtensible)val);
                     }
                     else

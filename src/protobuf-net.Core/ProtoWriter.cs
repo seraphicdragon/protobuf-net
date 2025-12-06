@@ -142,7 +142,7 @@ namespace ProtoBuf
             packedFieldNumber = 0; // ending the sub-item always wipes packed encoding
         }
 
-        protected private ProtoWriter()
+        public ProtoWriter()
             => netCache = new NetObjectCache();
 
         protected private ProtoWriter(NetObjectCache knownObjects)

@@ -62,7 +62,7 @@ namespace ProtoBuf.Internal.Serializers
         bool IRuntimeProtoSerializerNode.ReturnsValue => true;
 
         public object Read(ref ProtoReader.State state, object value)
-            => Serializer.ReadRepeated(ref state, _features, (TCollection)value, TypeModel.GetInbuiltSerializer<T>(_compatibilityLevel, _dataFormat));
+            => Serializer.ReadRepeated(ref state, _features, (TCollection)value, TypeModel.GetInbuiltSerializer<T>(_compatibilityLevel, _dataFormat)); //<--- IL2CPP Bug here!!! Not going into the ReadRepeated method!!! object is an array.
 
         public void EmitRead(CompilerContext ctx, Local valueFrom)
         {
