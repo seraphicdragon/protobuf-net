@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.ConstrainedExecution;
 using System.Runtime.Serialization;
 
 namespace ProtoBuf.Internal.Serializers
@@ -104,7 +105,7 @@ namespace ProtoBuf.Internal.Serializers
 
         public override bool IsSubType => true;
     }
-    internal class TypeSerializer<T> : TypeSerializer, ISerializer<T>, IFactory<T>, IProtoTypeSerializer
+    internal class TypeSerializer<T> : TypeSerializer, ISerializer<T>, IFactory<T>, IProtoTypeSerializer, IProtoTypeSerializer<T>
     {
         bool IRuntimeProtoSerializerNode.IsScalar => false;
         public virtual bool HasInheritance => false;
@@ -123,7 +124,10 @@ namespace ProtoBuf.Internal.Serializers
             value ??= (T)CreateInstance(state.Context);
 
             Callback(ref value, TypeModel.CallbackType.BeforeDeserialize, state.Context);
-            DeserializeBody(ref state, ref value, (ref T o) => o, (ref T o, T v) => o = v);
+            if (!ExpectedType.IsValueType)
+                DeserializeBody(ref state, ref value, (ref T o) => o, (ref T o, T v) => o = v);
+            else
+                DeserializeBody(ref state, ref value);
             Callback(ref value, TypeModel.CallbackType.AfterDeserialize, state.Context);
             return value;
         }
@@ -328,39 +332,73 @@ namespace ProtoBuf.Internal.Serializers
             return null;
         }
 
-        protected void SerializeImpl(ref ProtoWriter.State state, T value)
+        private IRuntimeProtoSerializerNode GetMoreSpecificSerializer(T value)
         {
-            Callback(ref value, TypeModel.CallbackType.BeforeSerialize, state.Context);
+            if (!CanHaveInheritance) return null;
+            Type actualType = value.GetType();
+            if (actualType == ExpectedType) return null;
 
-            // write inheritance first
-            if (CanHaveInheritance)
-            {
-                IRuntimeProtoSerializerNode next = GetMoreSpecificSerializer(value);
-                if (next is object) next.Write(ref state, value);
-            }
-
-            // write all actual fields
-            //Debug.WriteLine(">> Writing fields for " + forType.FullName);
             for (int i = 0; i < serializers.Length; i++)
             {
                 IRuntimeProtoSerializerNode ser = serializers[i];
-                if (!(ser is IProtoTypeSerializer ts && ts.IsSubType))
+                if (ser is IProtoTypeSerializer ts && ts.IsSubType && ser.ExpectedType.IsAssignableFrom(actualType))
                 {
-                    //Debug.WriteLine(": " + ser.ToString());
-                    ser.Write(ref state, value);
+                    return ser;
                 }
             }
-            //Debug.WriteLine("<< Writing fields for " + forType.FullName);
+            if (actualType == constructType) return null; // needs to be last in case the default concrete type is also a known sub-type
+            if (GetFlag(StateFlags.AssertKnownType))
+            {
+                TypeModel.ThrowUnexpectedSubtype(ExpectedType, actualType); // might throw (if not a proxy)
+            }
+            return null;
+        }
 
-            if (UseTypedExtensible)
+        protected void SerializeImpl(ref ProtoWriter.State state, T value)
+        {
+            ProtobufProfiler.BeginProfile(typeof(T), ProfilerType.SerializeImpl);
+            try
             {
-                state.AppendExtensionData((ITypedExtensible)value, ExpectedType);
+                Callback(ref value, TypeModel.CallbackType.BeforeSerialize, state.Context);
+
+                // write inheritance first
+                if (CanHaveInheritance)
+                {
+                    IRuntimeProtoSerializerNode next = GetMoreSpecificSerializer(value);
+                    if (next is object) next.Write(ref state, value); // This is fine... this is totally a class at this point!!!
+                }
+
+                // write all actual fields
+                //Debug.WriteLine(">> Writing fields for " + forType.FullName);
+                for (int i = 0; i < serializers.Length; i++)
+                {
+                    IRuntimeProtoSerializerNode ser = serializers[i];
+                    if (!(ser is IProtoTypeSerializer ts && ts.IsSubType))
+                    {
+                        //Debug.WriteLine(": " + ser.ToString());
+                        IRuntimeProtoSerializerNode<T> casted = ser as IRuntimeProtoSerializerNode<T>;
+                        if (casted != null)
+                            casted.Write(ref state, value);
+                        else
+                            ser.Write(ref state, value);
+                    }
+                }
+                //Debug.WriteLine("<< Writing fields for " + forType.FullName);
+
+                if (UseTypedExtensible)
+                {
+                    state.AppendExtensionData((ITypedExtensible)value, ExpectedType);
+                }
+                else if (GetFlag(StateFlags.IsExtensible))
+                {
+                    state.AppendExtensionData((IExtensible)value);
+                }
+                Callback(ref value, TypeModel.CallbackType.AfterSerialize, state.Context);
             }
-            else if (GetFlag(StateFlags.IsExtensible))
+            finally
             {
-                state.AppendExtensionData((IExtensible)value);
+                ProtobufProfiler.EndProfiler();
             }
-            Callback(ref value, TypeModel.CallbackType.AfterSerialize, state.Context);
         }
 
         protected Action<T, ISerializationContext> _subTypeOnBeforeDeserialize;
@@ -371,6 +409,10 @@ namespace ProtoBuf.Internal.Serializers
             int fieldNumber, lastFieldNumber = 0, lastFieldIndex = 0;
             bool fieldHandled;
 
+            if (ProtobufProfiler.IsDebugging)
+            {
+                ProtobufProfiler.Log(typeof(TState), "Deserializing Body");
+            }
             //Debug.WriteLine(">> Reading fields for " + forType.FullName);
             while ((fieldNumber = state.ReadFieldHeader()) > 0)
             {
@@ -389,24 +431,68 @@ namespace ProtoBuf.Internal.Serializers
                         {
                             // sub-types are implemented differently; pass the entire
                             // state through and unbox again to observe any changes
-                            bodyState = (TState)ser.Read(ref state, bodyState);
+                            IRuntimeProtoSerializerNode<TState> casted = ser as IRuntimeProtoSerializerNode<TState>;
+                            if (casted != null)
+                            {
+                                bodyState = casted.Read(ref state, bodyState);
+                            }
+                            else
+                                bodyState = (TState)ser.Read(ref state, bodyState);
+                        }
+                        else if(!ExpectedType.IsValueType || ser.ReturnsValue)
+                        {
+                            var value = getter(ref bodyState);
+
+                            IRuntimeProtoSerializerNode<T> casted = ser as IRuntimeProtoSerializerNode<T>;
+                            if (casted != null)
+                            {
+                                //ref T boxed = ref value;
+                                T result = casted.Read(ref state, value);
+                                if (ser.ReturnsValue)
+                                {
+                                    setter(ref bodyState, result);
+                                }
+                                else if (ExpectedType.IsValueType)
+                                {   // make sure changes to structs are preserved
+                                    setter(ref bodyState, result);
+                                }
+                            }
+                            else
+                            {
+
+                                object boxed = value;
+                                object result = ser.Read(ref state, boxed);
+                                if (ser.ReturnsValue)
+                                {
+                                    setter(ref bodyState, (T)result);
+                                }
+                                else if (ExpectedType.IsValueType)
+                                {   // make sure changes to structs are preserved
+                                    setter(ref bodyState, (T)boxed);
+                                }
+                            }
                         }
                         else
                         {
-                            var value = getter(ref bodyState);
-                            object boxed = value;
-                            object result = ser.Read(ref state, boxed);
-                            if (ser.ReturnsValue)
+                            TState value = bodyState;
+
+                            IRuntimeProtoSerializerNode<TState> casted = ser as IRuntimeProtoSerializerNode<TState>;
+                            if (casted != null)
                             {
-                                setter(ref bodyState, (T)result);
+                                //ref T boxed = ref value;
+                                TState result = casted.Read(ref state, value);
+                                bodyState = result;
                             }
-                            else if (ExpectedType.IsValueType)
-                            {   // make sure changes to structs are preserved
-                                setter(ref bodyState, (T)boxed);
+                            else
+                            {
+
+                                object boxed = value;
+                                object result = ser.Read(ref state, boxed);
+                                bodyState = (TState)result;
                             }
                         }
 
-                        lastFieldIndex = i;
+                            lastFieldIndex = i;
                         lastFieldNumber = fieldNumber;
                         fieldHandled = true;
                         break;
@@ -423,6 +509,88 @@ namespace ProtoBuf.Internal.Serializers
                     else if (GetFlag(StateFlags.IsExtensible))
                     {
                         var val = getter(ref bodyState);
+                        state.AppendExtensionData((IExtensible)val);
+                    }
+                    else
+                    {
+                        state.SkipField();
+                    }
+                }
+            }
+        }
+
+        protected void DeserializeBody<TState>(ref ProtoReader.State state, ref TState bodyState)  //I don't know why, but IL2CPP likes this one for value types.
+        {
+            int fieldNumber, lastFieldNumber = 0, lastFieldIndex = 0;
+            bool fieldHandled;
+
+            if (ProtobufProfiler.IsDebugging)
+            {
+                ProtobufProfiler.Log(typeof(TState), "Deserializing Body");
+            }
+            //Debug.WriteLine(">> Reading fields for " + forType.FullName);
+            while ((fieldNumber = state.ReadFieldHeader()) > 0)
+            {
+                fieldHandled = false;
+                if (fieldNumber < lastFieldNumber)
+                {
+                    lastFieldNumber = lastFieldIndex = 0;
+                }
+                for (int i = lastFieldIndex; i < fieldNumbers.Length; i++)
+                {
+                    if (fieldNumbers[i] == fieldNumber)
+                    {
+                        IRuntimeProtoSerializerNode ser = serializers[i];
+                        //Debug.WriteLine(": " + ser.ToString());
+                        if (ser is IProtoTypeSerializer ts && ts.IsSubType)
+                        {
+                            // sub-types are implemented differently; pass the entire
+                            // state through and unbox again to observe any changes
+                            IRuntimeProtoSerializerNode<TState> casted = ser as IRuntimeProtoSerializerNode<TState>;
+                            if (casted != null)
+                            {
+                                bodyState = casted.Read(ref state, bodyState);
+                            }
+                            else
+                                bodyState = (TState)ser.Read(ref state, bodyState);
+                        }
+                        else
+                        {
+                            TState value = bodyState;
+
+                            IRuntimeProtoSerializerNode<TState> casted = ser as IRuntimeProtoSerializerNode<TState>;
+                            if (casted != null)
+                            {
+                                //ref T boxed = ref value;
+                                TState result = casted.Read(ref state, value);
+                                bodyState = result;
+                            }
+                            else
+                            {
+
+                                object boxed = value;
+                                object result = ser.Read(ref state, boxed);
+                                bodyState = (TState)result;
+                            }
+                        }
+
+                        lastFieldIndex = i;
+                        lastFieldNumber = fieldNumber;
+                        fieldHandled = true;
+                        break;
+                    }
+                }
+                if (!fieldHandled)
+                {
+                    //Debug.WriteLine(": [" + fieldNumber + "] (unknown)");
+                    if (UseTypedExtensible)
+                    {
+                        var val = bodyState;
+                        state.AppendExtensionData((ITypedExtensible)val, ExpectedType);
+                    }
+                    else if (GetFlag(StateFlags.IsExtensible))
+                    {
+                        var val = bodyState;
                         state.AppendExtensionData((IExtensible)val);
                     }
                     else

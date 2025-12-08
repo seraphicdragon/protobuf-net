@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ProtoBuf.Meta;
+using System;
 using System.Reflection;
 
 namespace ProtoBuf.Internal.Serializers
@@ -12,8 +13,8 @@ namespace ProtoBuf.Internal.Serializers
         public override bool ReturnsValue => Tail.ReturnsValue;
 
         private readonly MethodInfo getSpecified, setSpecified;
-        public MemberSpecifiedDecorator(MethodInfo getSpecified, MethodInfo setSpecified, IRuntimeProtoSerializerNode tail)
-            : base(tail)
+        public MemberSpecifiedDecorator(ValueMember valueMember, MethodInfo getSpecified, MethodInfo setSpecified, IRuntimeProtoSerializerNode tail)
+            : base(valueMember, tail)
         {
             if (getSpecified is null && setSpecified is null) throw new InvalidOperationException();
             this.getSpecified = getSpecified;

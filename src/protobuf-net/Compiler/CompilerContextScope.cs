@@ -12,7 +12,7 @@ using System.Threading;
 
 namespace ProtoBuf.Compiler
 {
-    internal sealed class CompilerContextScope
+    public sealed class CompilerContextScope
     {
         internal static CompilerContextScope CreateInProcess()
         {

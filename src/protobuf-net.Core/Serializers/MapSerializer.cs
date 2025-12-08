@@ -54,11 +54,35 @@ namespace ProtoBuf.Serializers
         TCollection IRepeatedSerializer<TCollection>.ReadRepeated(ref ProtoReader.State state, SerializerFeatures features, TCollection values)
             => ReadMap(ref state, features, values, default, default, default, default);
 
-        static KeyValuePairSerializer<TKey, TValue> GetSerializer(
+        public static KeyValuePairSerializer<TKey, TValue> GetSerializer(
             TypeModel model, SerializerFeatures keyFeatures, SerializerFeatures valueFeatures, ISerializer<TKey> keySerializer, ISerializer<TValue> valueSerializer)
         {
             keySerializer ??= TypeModel.GetSerializer<TKey>(model);
             valueSerializer ??= TypeModel.GetSerializer<TValue>(model);
+
+            /*if(typeof(TKey) == typeof(int))
+            {
+                if(keySerializer != null && !ReferenceEquals(keySerializer, PrimaryTypeProviderInt.Instance))
+                {
+                    if (ProtobufProfiler.IsDebugging)
+                        ProtobufProfiler.Log(typeof(TKey), "Mismatch Key Serializer");
+                    keySerializer = PrimaryTypeProviderInt.Instance as ISerializer<TKey>;
+                    if (!ReferenceEquals(keySerializer, PrimaryTypeProviderInt.Instance))
+                        throw new InvalidCastException("Failed to cast the int serializer to the corrected form.");
+                }
+            }*/
+
+            /*if (typeof(TValue) == typeof(int))
+            {
+                if (valueSerializer != null && !ReferenceEquals(valueSerializer, PrimaryTypeProviderInt.Instance))
+                {
+                    if (ProtobufProfiler.IsDebugging)
+                        ProtobufProfiler.Log(typeof(TValue), "Mismatch Value Serializer");
+                    valueSerializer = PrimaryTypeProviderInt.Instance as ISerializer<TValue>;
+                    if (!ReferenceEquals(valueSerializer, PrimaryTypeProviderInt.Instance))
+                        throw new InvalidCastException("Failed to cast the int serializer to the corrected form.");
+                }
+            }*/
 
             keyFeatures.InheritFrom(keySerializer.Features);
             valueFeatures.InheritFrom(valueSerializer.Features);
@@ -72,17 +96,33 @@ namespace ProtoBuf.Serializers
         public void WriteMap(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures features, TCollection values,
             SerializerFeatures keyFeatures, SerializerFeatures valueFeatures, ISerializer<TKey> keySerializer = null, ISerializer<TValue> valueSerializer = null)
         {
-            if (features.HasAny(SerializerFeatures.OptionWrappedCollection))
+            ProtobufProfiler.BeginProfile(GetType(), ProfilerType.WriteMap);
+            try
             {
-                WriteNullWrapped(ref state, features, fieldNumber, values, keyFeatures, valueFeatures, keySerializer, valueSerializer);
-                return;
+                if (features.HasAny(SerializerFeatures.OptionWrappedCollection))
+                {
+                    WriteNullWrapped(ref state, features, fieldNumber, values, keyFeatures, valueFeatures, keySerializer, valueSerializer);
+                    return;
+                }
+
+                var pairSerializer = GetSerializer(state.Model, keyFeatures, valueFeatures, keySerializer, valueSerializer);
+                features.InheritFrom(pairSerializer.Features);
+                var wireType = features.GetWireType();
+
+                ProtobufProfiler.BeginProfile(typeof(ProtoWriter), ProfilerType.InteriorWriteMap);
+                try
+                {
+                    Write(ref state, fieldNumber, wireType, values, pairSerializer);
+                }
+                finally
+                {
+                    ProtobufProfiler.EndProfiler();
+                }
             }
-
-            var pairSerializer = GetSerializer(state.Model, keyFeatures, valueFeatures, keySerializer, valueSerializer);
-            features.InheritFrom(pairSerializer.Features);
-            var wireType = features.GetWireType();
-
-            Write(ref state, fieldNumber, wireType, values, pairSerializer);
+            finally
+            {
+                ProtobufProfiler.EndProfiler();
+            }
         }
 
         private void WriteNullWrapped(ref ProtoWriter.State state, SerializerFeatures features, int fieldNumber, TCollection values,
@@ -105,11 +145,42 @@ namespace ProtoBuf.Serializers
             if (enumerator.MoveNext())
             {
                 // TODO: avoid boxing on the write API (already done for read)
-                ISerializer<KeyValuePair<TKey, TValue>> boxed = pairSerializer;
+               // ISerializer<KeyValuePair<TKey, TValue>> boxed = pairSerializer;
                 do
                 {
-                    state.WriteFieldHeader(fieldNumber, wireType);
-                    state.GetWriter().WriteMessage(ref state, enumerator.Current, boxed, PrefixStyle.Base128, false);
+                    ProtobufProfiler.BeginProfile(typeof(ProtoWriter), ProfilerType.InteriorWriteMap2);
+                    try
+                    {
+                        state.WriteFieldHeader(fieldNumber, wireType);
+                        state.GetWriter().WriteMessage(ref state, enumerator.Current, pairSerializer, PrefixStyle.Base128, false);
+                    }
+                    finally
+                    {
+                        ProtobufProfiler.EndProfiler();
+                    }
+                } while (enumerator.MoveNext());
+            }
+        }
+
+        [MethodImpl(ProtoReader.HotPath)]
+        internal static void Write(ref ProtoWriter.State state, int fieldNumber, WireType wireType, ref Dictionary<TKey, TValue>.Enumerator enumerator, in KeyValuePairSerializer<TKey, TValue> pairSerializer)
+        {
+            if (enumerator.MoveNext())
+            {
+                // TODO: avoid boxing on the write API (already done for read)
+               // ISerializer<KeyValuePair<TKey, TValue>> boxed = pairSerializer;
+                do
+                {
+                    ProtobufProfiler.BeginProfile(typeof(ProtoWriter), ProfilerType.InteriorWriteMap2);
+                    try
+                    {
+                        state.WriteFieldHeader(fieldNumber, wireType);
+                        state.GetWriter().WriteMessage(ref state, enumerator.Current, pairSerializer, PrefixStyle.Base128, false);
+                    }
+                    finally
+                    {
+                        ProtobufProfiler.EndProfiler();
+                    }
                 } while (enumerator.MoveNext());
             }
         }
@@ -244,14 +315,44 @@ namespace ProtoBuf.Serializers
 
         internal override void Write(ref ProtoWriter.State state, int fieldNumber, WireType wireType, TCollection values, in KeyValuePairSerializer<TKey, TValue> pairSerializer)
         {
-            var iter = values.GetEnumerator();
-            try
+            Dictionary<TKey, TValue> castedDictionary = values as Dictionary<TKey, TValue>;
+            if (castedDictionary != null)
             {
+                Dictionary<TKey, TValue>.Enumerator iter = castedDictionary.GetEnumerator();
                 Write(ref state, fieldNumber, wireType, ref iter, pairSerializer);
             }
-            finally
+            else
             {
-                iter?.Dispose();
+                SortedList<TKey, TValue> sortedList = values as SortedList<TKey, TValue>;
+                if (sortedList != null)
+                {/*
+                    var iter1 = sortedList.GetEnumerator();
+                    Write(ref state, fieldNumber, wireType, ref iter1, pairSerializer);*/
+                    /*foreach(KeyValuePair<TKey, TValue> pair in sortedList)
+                    {
+                        state.WriteFieldHeader(fieldNumber, wireType);
+                        state.GetWriter().WriteMessage(ref state, pair, pairSerializer, PrefixStyle.Base128, false);
+                    }*/
+                    IList<TKey> keys = sortedList.Keys;
+                    for (int i = 0; i < keys.Count; i++)
+                    {
+                        KeyValuePair<TKey, TValue> pair = new KeyValuePair<TKey, TValue>(keys[i], sortedList[keys[i]]);
+                        state.WriteFieldHeader(fieldNumber, wireType);
+                        state.GetWriter().WriteMessage(ref state, pair, pairSerializer, PrefixStyle.Base128, false);
+                    }
+                }
+                else
+                {
+                    var iter = values.GetEnumerator();
+                    try
+                    {
+                        Write(ref state, fieldNumber, wireType, ref iter, pairSerializer);
+                    }
+                    finally
+                    {
+                        iter?.Dispose();
+                    }
+                }
             }
         }
     }

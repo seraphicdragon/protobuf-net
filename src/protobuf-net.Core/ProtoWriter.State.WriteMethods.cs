@@ -11,7 +11,7 @@ namespace ProtoBuf
 {
     partial class ProtoWriter
     {
-        ref partial struct State
+        public ref partial struct State
         {
             /// <summary>
             /// Writes a string to the stream
@@ -70,47 +70,55 @@ namespace ProtoBuf
             /// </summary>
             public void WriteFieldHeader(int fieldNumber, WireType wireType)
             {
-                var writer = _writer;
-                if (writer.WireType != WireType.None) FailPendingField(writer, fieldNumber, wireType);
-                if (fieldNumber < 0) ThrowHelper.ThrowArgumentOutOfRangeException(nameof(fieldNumber));
-                writer._needFlush = true;
-                if (writer.packedFieldNumber == 0)
+                ProtobufProfiler.BeginProfile(typeof(ProtoWriter), ProfilerType.WriteFieldHeader);
+                try
                 {
-                    writer.fieldNumber = fieldNumber;
-                    writer.WireType = wireType;
-                    WriteHeaderCore(fieldNumber, wireType);
-                }
-                else
-                {
-                    WritePackedField(writer, fieldNumber, wireType);
-                }
-
-                static void FailPendingField(ProtoWriter writer, int fieldNumber, WireType wireType)
-                {
-                    ThrowHelper.ThrowInvalidOperationException($"Cannot write a {wireType}/{fieldNumber} header until the {writer.WireType}/{writer.fieldNumber} data has been written; writer: {writer}");
-                }
-                static void WritePackedField(ProtoWriter writer, int fieldNumber, WireType wireType)
-                {
-                    if (writer.packedFieldNumber == fieldNumber)
-                    { // we'll set things up, but note we *don't* actually write the header here
-                        switch (wireType)
-                        {
-                            case WireType.Fixed32:
-                            case WireType.Fixed64:
-                            case WireType.Varint:
-                            case WireType.SignedVarint:
-                                break; // fine
-                            default:
-                                ThrowHelper.ThrowInvalidOperationException("Wire-type cannot be encoded as packed: " + wireType.ToString());
-                                break;
-                        }
+                    var writer = _writer;
+                    if (writer.WireType != WireType.None) FailPendingField(writer, fieldNumber, wireType);
+                    if (fieldNumber < 0) ThrowHelper.ThrowArgumentOutOfRangeException(nameof(fieldNumber));
+                    writer._needFlush = true;
+                    if (writer.packedFieldNumber == 0)
+                    {
                         writer.fieldNumber = fieldNumber;
                         writer.WireType = wireType;
+                        WriteHeaderCore(fieldNumber, wireType);
                     }
                     else
                     {
-                        ThrowHelper.ThrowInvalidOperationException("Field mismatch during packed encoding; expected " + writer.packedFieldNumber.ToString() + " but received " + fieldNumber.ToString());
+                        WritePackedField(writer, fieldNumber, wireType);
                     }
+
+                    static void FailPendingField(ProtoWriter writer, int fieldNumber, WireType wireType)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException($"Cannot write a {wireType}/{fieldNumber} header until the {writer.WireType}/{writer.fieldNumber} data has been written; writer: {writer}");
+                    }
+                    static void WritePackedField(ProtoWriter writer, int fieldNumber, WireType wireType)
+                    {
+                        if (writer.packedFieldNumber == fieldNumber)
+                        { // we'll set things up, but note we *don't* actually write the header here
+                            switch (wireType)
+                            {
+                                case WireType.Fixed32:
+                                case WireType.Fixed64:
+                                case WireType.Varint:
+                                case WireType.SignedVarint:
+                                    break; // fine
+                                default:
+                                    ThrowHelper.ThrowInvalidOperationException("Wire-type cannot be encoded as packed: " + wireType.ToString());
+                                    break;
+                            }
+                            writer.fieldNumber = fieldNumber;
+                            writer.WireType = wireType;
+                        }
+                        else
+                        {
+                            ThrowHelper.ThrowInvalidOperationException("Field mismatch during packed encoding; expected " + writer.packedFieldNumber.ToString() + " but received " + fieldNumber.ToString());
+                        }
+                    }
+                }
+                finally
+                {
+                    ProtobufProfiler.EndProfiler();
                 }
             }
 
@@ -430,35 +438,89 @@ namespace ProtoBuf
             /// </summary>
             public void WriteAny<[DynamicallyAccessedMembers(DynamicAccess.ContractType)] T>(int fieldNumber, SerializerFeatures features, T value, ISerializer<T> serializer = null)
             {
-                serializer ??= TypeModel.GetSerializer<T>(Model);
-                features.InheritFrom(serializer.Features);
+                ProtobufProfiler.BeginProfile(typeof(ProtoWriter), ProfilerType.WriteAny);
+                try
+                {
+                    if (ProtobufProfiler.IsDebugging)
+                        ProtobufProfiler.Log(typeof(T), "WriteAny");
 
-                if (features.HasAny(SerializerFeatures.OptionWrappedValue))
-                {
-                    WriteWrapped<T>(fieldNumber, features, value, serializer);
-                    return;
-                }
-                if (!(TypeHelper<T>.CanBeNull && TypeHelper<T>.ValueChecker.IsNull(value)))
-                {
-                    switch (features.GetCategory())
+                    /*if (typeof(T) == typeof(int))
                     {
-                        case SerializerFeatures.CategoryRepeated:
-                            // note we leave the field header to the interior in this case
-                            ((IRepeatedSerializer<T>)serializer).WriteRepeated(ref this, fieldNumber, features, value);
-                            break;
-                        case SerializerFeatures.CategoryMessageWrappedAtRoot:
-                        case SerializerFeatures.CategoryMessage:
-                            WriteFieldHeader(fieldNumber, features.GetWireType());
-                            _writer.WriteMessage<T>(ref this, value, serializer, PrefixStyle.Base128, features.ApplyRecursionCheck());
-                            break;
-                        case SerializerFeatures.CategoryScalar:
-                            WriteFieldHeader(fieldNumber, features.GetWireType());
-                            serializer.Write(ref this, value);
-                            break;
-                        default:
-                            features.ThrowInvalidCategory();
-                            break;
+                        if(serializer != null && !ReferenceEquals(serializer, PrimaryTypeProviderInt.Instance))
+                            ProtobufProfiler.Log(typeof(T), "Int type mismatch!");
+                        if (ProtobufProfiler.IsDebugging)
+                            ProtobufProfiler.Log(typeof(T), "Using PrimaryTypeProviderInt");
+                        serializer = (ISerializer<T>)PrimaryTypeProviderInt.Instance;
                     }
+                    else*/ if (serializer == null)
+                    {
+                        serializer = TypeModel.GetSerializer<T>(Model);
+                    }
+
+
+                    if (serializer == null)
+                        throw new NullReferenceException("The serializer was null!!!");
+
+
+                    if (serializer.GetType() == null)
+                        throw new NullReferenceException("The type was null!");
+
+                    bool skippedWrapped = false;
+                    if (typeof(int) == typeof(T))
+                    {
+                        //Gotta correct the IL2CPP bugs... no idea why it's happening...
+                        SerializerFeatures overrides = SerializerFeatures.WireTypeVarint | SerializerFeatures.CategoryScalar;
+                        //if ((features & SerializerFeaturesExtensions.CategoryMask) == 0)
+                            features |= overrides & SerializerFeaturesExtensions.CategoryMask;
+
+                       // if ((features & SerializerFeatures.WireTypeSpecified) == 0)
+                            features |= overrides & (SerializerFeaturesExtensions.WireTypeMask | SerializerFeatures.WireTypeSpecified);
+
+                        if (ProtobufProfiler.IsDebugging)
+                            ProtobufProfiler.Log(serializer.GetType(), "Updating to int features");
+                        skippedWrapped = true;
+                        WriteFieldHeader(fieldNumber, WireType.Varint);
+                        serializer.Write(ref this, value);
+                        return;
+                    }
+                    else
+                    {
+                        if (ProtobufProfiler.IsDebugging)
+                            ProtobufProfiler.Log(serializer.GetType(), "Features");
+                        features.InheritFrom(serializer.Features); // <--- IL2CPP Bug here!!!
+                    }
+
+                    if (!skippedWrapped && features.HasAny(SerializerFeatures.OptionWrappedValue))
+                    {
+                        WriteWrapped<T>(fieldNumber, features, value, serializer);
+                        return;
+                    }
+                    if (!(TypeHelper<T>.CanBeNull && TypeHelper<T>.ValueChecker.IsNull(value)))
+                    {
+                        switch (features.GetCategory())
+                        {
+                            case SerializerFeatures.CategoryRepeated:
+                                // note we leave the field header to the interior in this case
+                                ((IRepeatedSerializer<T>)serializer).WriteRepeated(ref this, fieldNumber, features, value);
+                                break;
+                            case SerializerFeatures.CategoryMessageWrappedAtRoot:
+                            case SerializerFeatures.CategoryMessage:
+                                WriteFieldHeader(fieldNumber, features.GetWireType());
+                                _writer.WriteMessage<T>(ref this, value, serializer, PrefixStyle.Base128, features.ApplyRecursionCheck());
+                                break;
+                            case SerializerFeatures.CategoryScalar:
+                                WriteFieldHeader(fieldNumber, features.GetWireType());
+                                serializer.Write(ref this, value);
+                                break;
+                            default:
+                                features.ThrowInvalidCategory();
+                                break;
+                        }
+                    }
+                }
+                finally
+                {
+                    ProtobufProfiler.EndProfiler();
                 }
             }
 
@@ -828,34 +890,42 @@ namespace ProtoBuf
             [Obsolete(PreferWriteMessage, false)]
             internal SubItemToken StartSubItem(object instance, PrefixStyle style)
             {
-                _writer.PreSubItem(ref this, instance);
-                switch (WireType)
+                ProtobufProfiler.BeginProfile(typeof(ProtoWriter), ProfilerType.StartSubItem);
+                try
                 {
-                    case WireType.StartGroup:
-                        WireType = WireType.None;
-                        return new SubItemToken((long)(-FieldNumber));
-                    case WireType.Fixed32:
-                        switch (style)
-                        {
-                            case PrefixStyle.Fixed32:
-                            case PrefixStyle.Fixed32BigEndian:
-                                break; // OK
-                            default:
-                                ThrowInvalidSerializationOperation();
-                                return default;
-                        }
-                        goto case WireType.String;
-                    case WireType.String:
+                    _writer.PreSubItem(ref this, instance);
+                    switch (WireType)
+                    {
+                        case WireType.StartGroup:
+                            WireType = WireType.None;
+                            return new SubItemToken((long)(-FieldNumber));
+                        case WireType.Fixed32:
+                            switch (style)
+                            {
+                                case PrefixStyle.Fixed32:
+                                case PrefixStyle.Fixed32BigEndian:
+                                    break; // OK
+                                default:
+                                    ThrowInvalidSerializationOperation();
+                                    return default;
+                            }
+                            goto case WireType.String;
+                        case WireType.String:
 #if DEBUG
-                        if (Model is not null && Model.ForwardsOnly)
-                        {
-                            ThrowHelper.ThrowProtoException("Should not be buffering data: " + instance ?? "(null)");
-                        }
+                            if (Model is not null && Model.ForwardsOnly)
+                            {
+                                ThrowHelper.ThrowProtoException("Should not be buffering data: " + instance ?? "(null)");
+                            }
 #endif
-                        return _writer.ImplStartLengthPrefixedSubItem(ref this, instance, style);
-                    default:
-                        ThrowInvalidSerializationOperation();
-                        return default;
+                            return _writer.ImplStartLengthPrefixedSubItem(ref this, instance, style);
+                        default:
+                            ThrowInvalidSerializationOperation();
+                            return default;
+                    }
+                }
+                finally
+                {
+                    ProtobufProfiler.EndProfiler();
                 }
             }
 

@@ -12,7 +12,7 @@ namespace ProtoBuf
 {
     public partial class ProtoWriter
     {
-        partial struct State
+        public partial struct State
         {
             /// <summary>
             /// Create a new ProtoWriter that targets a buffer writer
@@ -354,16 +354,24 @@ namespace ProtoBuf
 
             protected internal override void WriteSubType<T>(ref State state, T value, ISubTypeSerializer<T> serializer)
             {
-                switch (WireType)
+                ProtobufProfiler.BeginProfile("ProtoWriter.WriteSubType<T>");
+                try
                 {
-                    case WireType.String:
-                    case WireType.Fixed32:
-                        WriteWithLengthPrefix<T>(ref state, value, serializer);
-                        return;
-                    case WireType.StartGroup:
-                    default:
-                        base.WriteSubType<T>(ref state, value, serializer);
-                        return;
+                    switch (WireType)
+                    {
+                        case WireType.String:
+                        case WireType.Fixed32:
+                            WriteWithLengthPrefix<T>(ref state, value, serializer);
+                            return;
+                        case WireType.StartGroup:
+                        default:
+                            base.WriteSubType<T>(ref state, value, serializer);
+                            return;
+                    }
+                }
+                finally
+                {
+                    ProtobufProfiler.EndProfiler();
                 }
             }
 

@@ -4,7 +4,7 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+//using System.Collections.Immutable;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -13,12 +13,12 @@ namespace ProtoBuf.Serializers
 {
 
     // not quite ready to expose this yes
-    internal static partial class RepeatedSerializers
+    public static partial class RepeatedSerializers
     {
         private static readonly Hashtable s_providers;
 
         private static readonly Hashtable s_methodsPerDeclaringType = new Hashtable(), s_knownTypes = new Hashtable();
-        internal static MemberInfo Resolve(Type declaringType, string methodName, Type[] targs)
+        public static MemberInfo Resolve(Type declaringType, string methodName, Type[] targs)
         {
             targs ??= Type.EmptyTypes;
             var methods = (MethodTuple[])s_methodsPerDeclaringType[declaringType];
@@ -69,7 +69,7 @@ namespace ProtoBuf.Serializers
                 root == current ? targs : new[] { root, targs[0] }), false);
 
             // note that the immutable APIs can look a lot like the non-immutable ones; need to have them with *higher* priority to ensure they get recognized correctly
-            Add(typeof(ImmutableArray<>), (root, current, targs) => Resolve(typeof(RepeatedSerializer), nameof(RepeatedSerializer.CreateImmutableArray), targs));
+           /* Add(typeof(ImmutableArray<>), (root, current, targs) => Resolve(typeof(RepeatedSerializer), nameof(RepeatedSerializer.CreateImmutableArray), targs));
             Add(typeof(ImmutableDictionary<,>), (root, current, targs) => Resolve(typeof(MapSerializer), nameof(MapSerializer.CreateImmutableDictionary), targs));
             Add(typeof(ImmutableSortedDictionary<,>), (root, current, targs) => Resolve(typeof(MapSerializer), nameof(MapSerializer.CreateImmutableSortedDictionary), targs));
             Add(typeof(IImmutableDictionary<,>), (root, current, targs) => Resolve(typeof(MapSerializer), nameof(MapSerializer.CreateIImmutableDictionary), targs));
@@ -81,7 +81,7 @@ namespace ProtoBuf.Serializers
             Add(typeof(ImmutableQueue<>), (root, current, targs) => Resolve(typeof(RepeatedSerializer), nameof(RepeatedSerializer.CreateImmutableQueue), targs));
             Add(typeof(IImmutableQueue<>), (root, current, targs) => Resolve(typeof(RepeatedSerializer), nameof(RepeatedSerializer.CreateImmutableIQueue), targs));
             Add(typeof(ImmutableStack<>), (root, current, targs) => Resolve(typeof(RepeatedSerializer), nameof(RepeatedSerializer.CreateImmutableStack), targs));
-            Add(typeof(IImmutableStack<>), (root, current, targs) => Resolve(typeof(RepeatedSerializer), nameof(RepeatedSerializer.CreateImmutableIStack), targs));
+            Add(typeof(IImmutableStack<>), (root, current, targs) => Resolve(typeof(RepeatedSerializer), nameof(RepeatedSerializer.CreateImmutableIStack), targs));*/
 
             // the concurrent set
             Add(typeof(ConcurrentDictionary<,>), (root, current, targs) => Resolve(typeof(MapSerializer), nameof(MapSerializer.CreateConcurrentDictionary), new[] { root, targs[0], targs[1] }), false);
@@ -106,13 +106,13 @@ namespace ProtoBuf.Serializers
             Add(typeof(IEnumerable<>), (root, current, targs) => Resolve(typeof(RepeatedSerializer), nameof(RepeatedSerializer.CreateEnumerable), new[] { root, targs[0] }), false);
         }
 
-        public static void Add(Type type, Func<Type, Type, Type[], MemberInfo> implementation, bool exactOnly = true, Hashtable externalProviders = null)
+        public static void Add(Type type, Func<Type, Type, Type[], MemberInfo> implementation, bool exactOnly = true, Hashtable externalProviders = null, bool overridePriorityFlag = false, int overridePriority = -1)
         {
             var providers = (externalProviders == null ? s_providers : externalProviders);
             if (type is null) ThrowHelper.ThrowArgumentNullException(nameof(type));
             lock (providers)
             {
-                var reg = new Registration(s_providers.Count * (externalProviders == null ? 1 : -1) + 1, implementation, exactOnly);
+                var reg = new Registration(overridePriorityFlag ? overridePriority : (s_providers.Count * (externalProviders == null ? 1 : -1) + 1), implementation, exactOnly);
                 providers.Add(type, reg);
             }
             lock (s_knownTypes)

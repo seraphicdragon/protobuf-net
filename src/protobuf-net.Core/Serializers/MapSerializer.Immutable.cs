@@ -1,13 +1,13 @@
 ﻿using ProtoBuf.Internal;
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+//using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace ProtoBuf.Serializers
 {
-    public static partial class MapSerializer
+    /*public static partial class MapSerializer
     {
 
         /// <summary>Create a map serializer that operates on immutable dictionaries</summary>
@@ -127,5 +127,5 @@ namespace ProtoBuf.Serializers
                 iter?.Dispose();
             }
         }
-    }
+    }*/
 }

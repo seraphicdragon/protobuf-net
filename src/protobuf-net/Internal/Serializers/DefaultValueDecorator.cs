@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ProtoBuf.Meta;
+using System;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -14,7 +15,7 @@ namespace ProtoBuf.Internal.Serializers
 
         private readonly object defaultValue;
 
-        public DefaultValueDecorator(object defaultValue, IRuntimeProtoSerializerNode tail) : base(tail)
+        public DefaultValueDecorator(ValueMember valueMember, object defaultValue, IRuntimeProtoSerializerNode tail) : base(valueMember, tail)
         {
             if (defaultValue is null) throw new ArgumentNullException(nameof(defaultValue));
             Type type = defaultValue.GetType();

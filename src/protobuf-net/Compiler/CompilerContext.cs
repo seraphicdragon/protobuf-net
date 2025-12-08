@@ -18,7 +18,7 @@ using System.Runtime.Serialization;
 namespace ProtoBuf.Compiler
 {
     [StructLayout(LayoutKind.Auto)]
-    internal readonly struct CodeLabel
+    public readonly struct CodeLabel
     {
         public readonly Label Value;
         public readonly int Index;
@@ -28,7 +28,7 @@ namespace ProtoBuf.Compiler
             this.Index = index;
         }
     }
-    internal sealed class CompilerContext : IDisposable
+    public sealed class CompilerContext : IDisposable
     {
         public TypeModel Model { get; }
 

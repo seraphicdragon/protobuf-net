@@ -62,7 +62,7 @@ namespace ProtoBuf.Serializers
 
         protected override int TryGetCount(TCollection values) => TryGetCountDefault(values);
 
-        internal override long Measure(TCollection values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
+        public override long Measure(TCollection values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
         {
             var iter = values.GetEnumerator();
             try
@@ -74,7 +74,7 @@ namespace ProtoBuf.Serializers
                 iter?.Dispose();
             }
         }
-        internal override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, TCollection values, ISerializer<T> serializer, SerializerFeatures features)
+        public override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, TCollection values, ISerializer<T> serializer, SerializerFeatures features)
         {
             var iter = values.GetEnumerator();
             try
@@ -86,7 +86,7 @@ namespace ProtoBuf.Serializers
                 iter?.Dispose();
             }
         }
-        internal override void WritePacked(ref ProtoWriter.State state, TCollection values, IMeasuringSerializer<T> serializer, WireType wireType)
+        public override void WritePacked(ref ProtoWriter.State state, TCollection values, IMeasuringSerializer<T> serializer, WireType wireType)
         {
             var iter = values.GetEnumerator();
             try

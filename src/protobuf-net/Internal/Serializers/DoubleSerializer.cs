@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace ProtoBuf.Internal.Serializers
 {
-    internal sealed class DoubleSerializer : IRuntimeProtoSerializerNode
+    internal sealed class DoubleSerializer : IRuntimeProtoSerializerNode, IRuntimeProtoSerializerNode<double>
     {
         bool IRuntimeProtoSerializerNode.IsScalar => true;
         private DoubleSerializer() { }
@@ -19,7 +19,7 @@ namespace ProtoBuf.Internal.Serializers
 
         public object Read(ref ProtoReader.State state, object value)
         {
-            Debug.Assert(value is null); // since replaces
+            //Debug.Assert(value is null); // since replaces
             return state.ReadDouble();
         }
 
@@ -36,6 +36,16 @@ namespace ProtoBuf.Internal.Serializers
         void IRuntimeProtoSerializerNode.EmitRead(Compiler.CompilerContext ctx, Compiler.Local entity)
         {
             ctx.EmitStateBasedRead(nameof(ProtoReader.State.ReadDouble), ExpectedType);
+        }
+
+        public void Write(ref ProtoWriter.State state, double value)
+        {
+            state.WriteDouble(value);
+        }
+
+        public double Read(ref ProtoReader.State state, double value)
+        {
+            return state.ReadDouble();
         }
     }
 }

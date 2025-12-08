@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace ProtoBuf.Internal.Serializers
 {
-    internal sealed class ByteSerializer : IRuntimeProtoSerializerNode
+    internal sealed class ByteSerializer : IRuntimeProtoSerializerNode, IRuntimeProtoSerializerNode<byte>
     {
         bool IRuntimeProtoSerializerNode.IsScalar => true;
         private ByteSerializer() { }
@@ -35,6 +35,16 @@ namespace ProtoBuf.Internal.Serializers
         void IRuntimeProtoSerializerNode.EmitRead(Compiler.CompilerContext ctx, Compiler.Local entity)
         {
             ctx.EmitStateBasedRead(nameof(ProtoReader.State.ReadByte), ExpectedType);
+        }
+
+        public void Write(ref ProtoWriter.State state, byte value)
+        {
+            state.WriteByte(value);
+        }
+
+        public byte Read(ref ProtoReader.State state, byte value)
+        {
+            return state.ReadByte();
         }
     }
 }

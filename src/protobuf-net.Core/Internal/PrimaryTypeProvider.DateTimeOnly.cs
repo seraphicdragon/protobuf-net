@@ -1,4 +1,4 @@
-﻿using ProtoBuf.Serializers;
+﻿/*using ProtoBuf.Serializers;
 using System;
 
 #if NET6_0_OR_GREATER
@@ -88,4 +88,4 @@ namespace ProtoBuf.Internal
             => ProtoWriter.MeasureInt64(value.Value.Ticks);
     }
 }
-#endif
+#endif*/

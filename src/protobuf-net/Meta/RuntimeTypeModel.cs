@@ -20,11 +20,14 @@ using System.Threading;
 
 namespace ProtoBuf.Meta
 {
+
     /// <summary>
     /// Provides protobuf serialization support for a number of types that can be defined at runtime
     /// </summary>
     public sealed class RuntimeTypeModel : TypeModel
     {
+
+
         /// <summary>
         /// Ensures that RuntimeTypeModel has been initialized, in advance of using methods on <see cref="Serializer"/>.
         /// </summary>
@@ -654,7 +657,7 @@ namespace ProtoBuf.Meta
             }
         }
 
-        internal IRuntimeProtoSerializerNode TryGetBasicTypeSerializer(Type type)
+        public IRuntimeProtoSerializerNode TryGetBasicTypeSerializer(Type type)
         {
             int idx = basicTypes.IndexOf(BasicTypeFinder, type);
 
@@ -961,7 +964,7 @@ namespace ProtoBuf.Meta
         protected override ISerializer<T> GetSerializer<T>()
             => GetServices<T>(default) as ISerializer<T>;
 
-        internal override ISerializer<T> GetSerializerCore<T>(CompatibilityLevel ambient)
+        public override ISerializer<T> GetSerializerCore<T>(CompatibilityLevel ambient)
             => GetServices<T>(ambient) as ISerializer<T>;
 
         /// <summary>Indicates whether a type is known to the model</summary>
@@ -2188,6 +2191,17 @@ namespace ProtoBuf.Meta
                 }
             }
         }
+        public static void RegisterCustomDecoratorSerializable<T>() where T : ICustomDecoratorSerializable
+        {
+            FieldDecorator<T>.CreateType();
+            //DefaultValueDecorator<T>.CreateType();
+        }
+
+        public static void RegisterEnumMemberSerializer<T>() where T : Enum
+        {
+            EnumMemberSerializer<T>.CreateType();
+        }    
+
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowDefaultAutoAddMissingTypes()

@@ -14,7 +14,7 @@ namespace ProtoBuf.Serializers
 
     public abstract class ExternalSerializer<TCollection, [DynamicallyAccessedMembers(DynamicAccess.ContractType)] T> : RepeatedSerializer<TCollection, T> where TCollection : IEnumerable<T>
     {
-        internal override long Measure(TCollection values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
+        public override long Measure(TCollection values, IMeasuringSerializer<T> serializer, ISerializationContext context, WireType wireType)
         {
             IEnumerator<T> iter = null;
             try
@@ -28,7 +28,7 @@ namespace ProtoBuf.Serializers
                     iter.Dispose();
             }
         }
-        internal override void WritePacked(ref ProtoWriter.State state, TCollection values, IMeasuringSerializer<T> serializer, WireType wireType)
+        public override void WritePacked(ref ProtoWriter.State state, TCollection values, IMeasuringSerializer<T> serializer, WireType wireType)
         {
             IEnumerator<T> iter = null;
             try
@@ -43,7 +43,7 @@ namespace ProtoBuf.Serializers
             }
         }
 
-        internal override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, TCollection values, ISerializer<T> serializer, SerializerFeatures features)
+        public override void Write(ref ProtoWriter.State state, int fieldNumber, SerializerFeatures category, WireType wireType, TCollection values, ISerializer<T> serializer, SerializerFeatures features)
         {
             IEnumerator<T> iter = null;
             try

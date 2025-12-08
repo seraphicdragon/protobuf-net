@@ -2,7 +2,7 @@
 
 namespace ProtoBuf.Internal.Serializers
 {
-    internal interface IRuntimeProtoSerializerNode
+    public interface IRuntimeProtoSerializerNode
     {
         /// <summary>
         /// Does this represent a scalar type?
@@ -50,7 +50,7 @@ namespace ProtoBuf.Internal.Serializers
         /// the value is needed multiple times, then note that a "null"
         /// means "the top of the stack", in which case you should create your
         /// own copy - GetLocalWithValue.</param>
-        void EmitWrite(Compiler.CompilerContext ctx, Compiler.Local valueFrom);
+        internal void EmitWrite(Compiler.CompilerContext ctx, Compiler.Local valueFrom);
 
         /// <summary>
         /// Emit the IL necessary to perform the given actions to deserialize this data.
@@ -59,6 +59,24 @@ namespace ProtoBuf.Internal.Serializers
         /// <param name="entity">For nested values, the instance holding the values; note
         /// that this is not always provided - a null means not supplied. Since this is always
         /// a variable or argument, it is not necessary to consume this value.</param>
-        void EmitRead(Compiler.CompilerContext ctx, Compiler.Local entity);
+        internal void EmitRead(Compiler.CompilerContext ctx, Compiler.Local entity);
+    }
+    
+    public interface IRuntimeProtoSerializerNode<T> : IRuntimeProtoSerializerNode
+    {
+        /// <summary>
+        /// Perform the steps necessary to serialize this data.
+        /// </summary>
+        /// <param name="value">The value to be serialized.</param>
+        /// <param name="state">Writer state</param>
+        void Write(ref ProtoWriter.State state, T value);
+
+        /// <summary>
+        /// Perform the steps necessary to deserialize this data.
+        /// </summary>
+        /// <param name="value">The current value, if appropriate.</param>
+        /// <param name="state">Reader state</param>
+        /// <returns>The updated / replacement value.</returns>
+        T Read(ref ProtoReader.State state, T value);
     }
 }

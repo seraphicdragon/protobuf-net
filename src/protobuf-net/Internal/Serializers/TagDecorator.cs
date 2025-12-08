@@ -1,12 +1,15 @@
-﻿using System;
-using System.Diagnostics;
-using ProtoBuf.Meta;
+﻿using ProtoBuf.Meta;
 using ProtoBuf.Serializers;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace ProtoBuf.Internal.Serializers
 {
-    internal sealed class TagDecorator : ProtoDecoratorBase, IProtoTypeSerializer
+    internal class TagDecorator : ProtoDecoratorBase, IProtoTypeSerializer
     {
+        protected static readonly Dictionary<Type, ConstructorInfo> defaultValueDecoratorConstructors = new Dictionary<Type, ConstructorInfo>();
         SerializerFeatures IProtoTypeSerializer.Features => wireType.AsFeatures();
         bool IProtoTypeSerializer.IsSubType => Tail is IProtoTypeSerializer pts && pts.IsSubType;
         public bool HasCallbacks(TypeModel.CallbackType callbackType) => Tail is IProtoTypeSerializer pts && pts.HasCallbacks(callbackType);
@@ -35,8 +38,8 @@ namespace ProtoBuf.Internal.Serializers
         public override Type ExpectedType => Tail.ExpectedType;
         Type IProtoTypeSerializer.BaseType => ExpectedType;
 
-        public TagDecorator(int fieldNumber, WireType wireType, bool strict, IRuntimeProtoSerializerNode tail)
-            : base(tail)
+        public TagDecorator(ValueMember valueMember, int fieldNumber, WireType wireType, bool strict, IRuntimeProtoSerializerNode tail)
+            : base(valueMember, tail)
         {
             this.fieldNumber = fieldNumber;
             this.wireType = wireType;
@@ -47,11 +50,11 @@ namespace ProtoBuf.Internal.Serializers
 
         public override bool ReturnsValue => Tail.ReturnsValue;
 
-        private readonly bool strict;
-        private readonly int fieldNumber;
-        private readonly WireType wireType;
+        protected readonly bool strict;
+        protected readonly int fieldNumber;
+        protected readonly WireType wireType;
 
-        private bool NeedsHint => ((int)wireType & ~7) != 0;
+        public bool NeedsHint => ((int)wireType & ~7) != 0;
 
         public override object Read(ref ProtoReader.State state, object value)
         {
@@ -72,6 +75,11 @@ namespace ProtoBuf.Internal.Serializers
                 state.WriteFieldHeader(fieldNumber, wireType);
                 Tail.Write(ref state, value);
             }
+        }
+
+        public void WriteFieldHeader(ref ProtoWriter.State state)
+        {
+            state.WriteFieldHeader(fieldNumber, wireType);
         }
 
         bool IProtoTypeSerializer.HasInheritance => false;
@@ -115,5 +123,88 @@ namespace ProtoBuf.Internal.Serializers
             }
             Tail.EmitRead(ctx, valueFrom);
         }
+        internal static DefaultValueDecorator CreateInstance(Type memberType, ValueMember valueMember, int fieldNumber, WireType wireType, bool strict, IRuntimeProtoSerializerNode tail)
+        {
+            //ValueMember valueMember, IRuntimeProtoSerializerNode tail
+            if (defaultValueDecoratorConstructors.TryGetValue(memberType, out ConstructorInfo constructor))
+            {
+
+                // Example of invoking the constructor
+                object[] constructorArgs = new object[] { valueMember, fieldNumber, wireType, strict, tail };
+                object instance = constructor.Invoke(constructorArgs);
+
+                return instance as DefaultValueDecorator;
+            }
+            throw new InvalidOperationException("Failed to find FieldDecorator constructor for this type: " + memberType);
+        }
+
+        public bool IsStrict => strict;
+
+        public WireType WireType => wireType;
+    }
+
+    internal sealed class TagDecorator<T> : TagDecorator, IRuntimeProtoSerializerNode<T>
+    {
+        private readonly IRuntimeProtoSerializerNode<T> castedTail = null;
+        public TagDecorator(ValueMember valueMember, int fieldNumber, WireType wireType, bool strict, IRuntimeProtoSerializerNode tail) : base(valueMember, fieldNumber, wireType, strict, tail)
+        {
+            castedTail = tail as IRuntimeProtoSerializerNode<T>;
+        }
+
+        public T Read(ref ProtoReader.State state, T value)
+        {
+            Debug.Assert(fieldNumber == state.FieldNumber);
+            if (strict) { state.Assert(wireType); }
+            else if (NeedsHint) { state.Hint(wireType); }
+
+            if(castedTail != null)
+                return castedTail.Read(ref state, value);
+            else
+                return (T)Tail.Read(ref state, value);
+        }
+
+        public void Write(ref ProtoWriter.State state, T value)
+        {
+            if (Tail is IDirectRuntimeWriteNode dw && dw.CanDirectWrite(wireType))
+            {
+                dw.DirectWrite(fieldNumber, wireType, ref state, value);
+            }
+            else
+            {
+                state.WriteFieldHeader(fieldNumber, wireType);
+
+                if (castedTail != null)
+                    castedTail.Write(ref state, value);
+                else
+                    Tail.Write(ref state, value);
+            }
+        }
+
+        /*internal static void CreateType()
+        { // Get the Type object for the constructed generic type (e.g., GenericClass<int>)
+            Type constructedGenericType = typeof(TagDecorator<T>);
+
+            // Define the parameter types for the desired constructor
+            //TagDecorator(ValueMember valueMember, int fieldNumber, WireType wireType, bool strict, IRuntimeProtoSerializerNode tail) 
+            Type[] constructorParameterTypes = new Type[] { typeof(ValueMember), typeof(int), typeof(WireType), typeof(bool), typeof(IRuntimeProtoSerializerNode) };
+
+            // Get the public constructor with the specified parameter types
+            ConstructorInfo constructor = constructedGenericType.GetConstructor(
+                BindingFlags.Public | BindingFlags.Instance,
+                null, // Binder (optional, use null for default)
+                constructorParameterTypes,
+                null // Parameter modifiers (optional, use null)
+            );
+
+            if (constructor != null)
+            {
+
+            }
+            else
+            {
+                throw new InvalidOperationException("Failed to find a constructor for this type: " + typeof(DefaultValueDecorator<T>));
+            }
+            defaultValueDecoratorConstructors.Add(typeof(T), constructor);
+        }*/
     }
 }

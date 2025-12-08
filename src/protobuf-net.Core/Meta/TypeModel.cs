@@ -11,7 +11,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace ProtoBuf.Meta
@@ -158,7 +157,9 @@ namespace ProtoBuf.Meta
             }
             return WireType.None;
         }
-        /// <summary>        /// Indicates whether a type is known to the model
+
+        /// <summary>
+        /// Indicates whether a type is known to the model
         /// </summary>
         internal virtual bool IsKnownType<T>(CompatibilityLevel ambient)
             => (TypeHelper<T>.IsReferenceType | !TypeHelper<T>.CanBeNull) // don't claim T?
@@ -1378,10 +1379,10 @@ namespace ProtoBuf.Meta
         protected virtual ISerializer<T> GetSerializer<[DynamicallyAccessedMembers(DynamicAccess.ContractType)] T>()
             => this as ISerializer<T>;
 
-        internal virtual ISerializer<T> GetSerializerCore<T>(CompatibilityLevel ambient)
+        public virtual ISerializer<T> GetSerializerCore<T>(CompatibilityLevel ambient)
             => GetSerializer<T>();
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        //[MethodImpl(MethodImplOptions.NoInlining)]
         private static ISerializer<T> NoSerializer<T>(TypeModel model)
         {
             string suffix = null;
@@ -1393,7 +1394,7 @@ namespace ProtoBuf.Meta
             return default;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        //[MethodImpl(MethodImplOptions.NoInlining)]
         private static ISubTypeSerializer<T> NoSubTypeSerializer<T>(TypeModel model) where T : class
         {
             ThrowHelper.ThrowInvalidOperationException($"No sub-type serializer for type {typeof(T).NormalizeName()} is available for model {model?.ToString() ?? "(none)"}");
@@ -1418,8 +1419,8 @@ namespace ProtoBuf.Meta
             }
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static T ActivatorCreate<T>()
+        //[MethodImpl(MethodImplOptions.NoInlining)]
+        public static T ActivatorCreate<T>()
         {
             try
             {
@@ -1432,11 +1433,26 @@ namespace ProtoBuf.Meta
             }
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static ISerializer<T> GetSerializer<[DynamicallyAccessedMembers(DynamicAccess.ContractType)] T>(TypeModel model, CompatibilityLevel ambient = default)
-           => SerializerCache<PrimaryTypeProvider, T>.InstanceField
+       // [MethodImpl(MethodImplOptions.NoInlining)]
+        public static ISerializer<T> GetSerializer<[DynamicallyAccessedMembers(DynamicAccess.ContractType)] T>(TypeModel model, CompatibilityLevel ambient = default)
+        {
+            //if ((PrimaryTypeProviderInt.Instance as ISerializer<T>) != null)
+            /*if (typeof(T) == typeof(int))
+            {
+                ISerializer<T> returnSerializer = PrimaryTypeProviderInt.Instance as ISerializer<T>;
+                if (ReferenceEquals(returnSerializer, null))
+                    throw new NullReferenceException("The returned result for int was null! This is the type: " + typeof(T).FullName);
+            }*/
+            if (SerializerCache<PrimaryTypeProvider, T>.InstanceField != null)
+                return SerializerCache<PrimaryTypeProvider, T>.InstanceField;
+            else if (model?.GetSerializerCore<T>(ambient) != null)
+                return model?.GetSerializerCore<T>(ambient);
+            return NoSerializer<T>(model);
+        }
+            
+            /*SerializerCache<PrimaryTypeProvider, T>.InstanceField
             ?? model?.GetSerializerCore<T>(ambient)
-            ?? NoSerializer<T>(model);
+            ?? NoSerializer<T>(model);*/
 
         /// <summary>
         /// Gets the inbuilt serializer relevant to a specific <see cref="CompatibilityLevel"/> (and <see cref="DataFormat"/>).
@@ -1449,6 +1465,17 @@ namespace ProtoBuf.Meta
 #endif
         {
             ISerializer<T> serializer;
+
+
+
+            /*if (typeof(T) == typeof(int))
+            {
+                serializer = PrimaryTypeProviderInt.Instance as ISerializer<T>;
+                if (ReferenceEquals(serializer, null))
+                    throw new NullReferenceException("The Int Serializer was null for this type: " + typeof(T));
+                return serializer;
+            }*/
+
             if (compatibilityLevel >= CompatibilityLevel.Level300)
             {
                 if (dataFormat == DataFormat.FixedSize)
@@ -1486,8 +1513,18 @@ namespace ProtoBuf.Meta
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static ISubTypeSerializer<T> GetSubTypeSerializer<T>(TypeModel model) where T : class
-           => model?.GetSerializer<T>() as ISubTypeSerializer<T>
-            ?? NoSubTypeSerializer<T>(model);
+        {
+            ProtobufProfiler.BeginProfile("TypeModel.GetSubTypeSerializer");
+            try
+            {
+                return model?.GetSerializer<T>() as ISubTypeSerializer<T>
+                ?? NoSubTypeSerializer<T>(model);
+            }
+            finally
+            {
+                ProtobufProfiler.EndProfiler();
+            }
+        }
 
         /// <summary>
         /// Applies a protocol-buffer stream to an existing instance (which may be null).
